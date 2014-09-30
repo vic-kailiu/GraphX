@@ -7,21 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphX.Controls", "GraphX.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphX.Common", "GraphX.Common\GraphX.Common.csproj", "{EEBD4EF2-4649-4F36-8FDA-B1BA071A19BE}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{C6ACB65E-A76D-44E4-9B20-022C0E3498B7}"
-	ProjectSection(SolutionItems) = preProject
-		Documents\AIV.cs = Documents\AIV.cs
-		Documents\CHANGELOG.txt = Documents\CHANGELOG.txt
-		Documents\TODO.txt = Documents\TODO.txt
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{E33DE020-10E3-44CC-BD32-0516CABD459C}"
-	ProjectSection(SolutionItems) = preProject
-		Documents\Licenses\Apache2.0.txt = Documents\Licenses\Apache2.0.txt
-		Documents\Licenses\MicrosoftPublicLicense.txt = Documents\Licenses\MicrosoftPublicLicense.txt
-		Documents\Licenses\readme.txt = Documents\Licenses\readme.txt
-		Documents\Licenses\TheMITLicense.txt = Documents\Licenses\TheMITLicense.txt
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphX.Logic", "GraphX.Logic\GraphX.Logic.csproj", "{35F09D76-FDBE-4854-9DFC-961185C53B57}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShowcaseExample", "ShowcaseExample\ShowcaseExample.csproj", "{BB08B968-4510-4CA2-9EDF-BB42ABF3A88B}"
@@ -65,9 +50,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{E33DE020-10E3-44CC-BD32-0516CABD459C} = {C6ACB65E-A76D-44E4-9B20-022C0E3498B7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .
