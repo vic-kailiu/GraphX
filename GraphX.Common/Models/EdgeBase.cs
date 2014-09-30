@@ -19,13 +19,13 @@ namespace GraphX
             Source = source;
             Target = target;
             Weight = weight;
-            ID = -1;
+            ID = Guid.Empty;
         }
 
         /// <summary>
         /// Unique edge ID
         /// </summary>
-        public int ID { get; set; }
+        public Guid ID { get; set; }
 
         /// <summary>
         /// Returns true if Source vertex equals Target vertex

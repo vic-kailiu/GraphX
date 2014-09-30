@@ -6,12 +6,12 @@ namespace GraphX
     {
         public VertexBase()
         {
-            ID = -1;
+            ID = Guid.Empty;
         }
         /// <summary>
         /// Unique vertex ID
         /// </summary>
-        public int ID { get; set; }
+        public Guid ID { get; set; }
 
         public override bool Equals(object obj)
         {

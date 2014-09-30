@@ -1007,15 +1007,15 @@ namespace GraphX.GraphSharp.Algorithms.EdgeRouting
 
         struct KeyPair
         {
-            public KeyPair(int n1, int n2)
+            public KeyPair(Guid n1, Guid n2)
             {
                 k1 = n1;
                 k2 = n2;
             }
 
-            public int k1;
+            public Guid k1;
             
-            public int k2;
+            public Guid k2;
         }
 
         /// <summary>

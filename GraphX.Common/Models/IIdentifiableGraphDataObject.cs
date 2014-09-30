@@ -4,6 +4,6 @@ namespace GraphX
 {
     public interface IIdentifiableGraphDataObject
     {
-        int ID { get; set; }
+        Guid ID { get; set; }
     }
 }

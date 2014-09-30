@@ -55,7 +55,7 @@ namespace GraphX.GraphSharp.Algorithms.EdgeRouting
         private void EdgeRoutingTest(TEdge ctrl)
         {
             //bad edge data check
-            if (ctrl.Source.ID == -1 || ctrl.Target.ID == -1)
+            if (ctrl.Source.ID == Guid.Empty || ctrl.Target.ID == Guid.Empty)
                 throw new GX_InvalidDataException("SimpleEdgeRouting() -> You must assign unique ID for each vertex to use SimpleER algo!");
             if (ctrl.Source.ID == ctrl.Target.ID || !VertexPositions.ContainsKey(ctrl.Target)) return;
 

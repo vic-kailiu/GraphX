@@ -37,9 +37,9 @@ namespace ShowcaseExample
             dg_Logic.Graph = new GraphExample();
             dg_Area.MoveAnimation = AnimationFactory.CreateMoveAnimation(MoveAnimation.Move, TimeSpan.FromSeconds(0.5));
             //dg_Area.DeleteAnimation = AnimationFactory.CreateDeleteAnimation(DeleteAnimation.Fade, TimeSpan.FromSeconds(0.3));
-           // dg_Area.MouseOverAnimation = AnimationFactory.CreateMouseOverAnimation(MouseOverAnimation.Scale, TimeSpan.FromSeconds(0.3));
+            dg_Area.MouseOverAnimation = AnimationFactory.CreateMouseOverAnimation(MouseOverAnimation.Scale);
             dg_Area.VertexSelected += dg_Area_VertexSelected;
-            dg_test.Visibility = System.Windows.Visibility.Collapsed;
+            //dg_test.Visibility = System.Windows.Visibility.Collapsed;
             dg_test.Click += dg_test_Click;
             dg_zoomctrl.AreaSelected += dg_zoomctrl_AreaSelected;
             //dg_Area.UseNativeObjectArrange = true;

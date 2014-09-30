@@ -177,15 +177,15 @@ namespace GraphX
             {
                 Width = DesignSize.Width;
                 Height = DesignSize.Height;
-                var vc = new VertexDataExample(1, "Johnson B.C");
+                var vc = new VertexDataExample(Guid.NewGuid(), "Johnson B.C");
                 var ctrl = ControlFactory.CreateVertexControl(vc);
                 SetX(ctrl, 0); SetY(ctrl, 0, true);
 
-                var vc2 = new VertexDataExample(2, "Manson J.C");
+                var vc2 = new VertexDataExample(Guid.NewGuid(), "Manson J.C");
                 var ctrl2 = ControlFactory.CreateVertexControl(vc2);
                 SetX(ctrl2, 200); SetY(ctrl2, 0, true);
 
-                var vc3 = new VertexDataExample(1, "Franklin A.J");
+                var vc3 = new VertexDataExample(Guid.NewGuid(), "Franklin A.J");
                 var ctrl3 = ControlFactory.CreateVertexControl(vc3);
                 SetX(ctrl3, 100); SetY(ctrl3, 100, true);
 
@@ -374,18 +374,18 @@ namespace GraphX
         #endregion
 
         #region Automatic data ID storage and resolving
-        private int _dataIdCounter;
-        private int GetNextUniqueId()
+        private Guid GetNextUniqueId()
         {
-            while (_dataIdsCollection.Contains(_dataIdCounter))
+            Guid newId = Guid.Empty;
+            while (newId == Guid.Empty)
             {
-                _dataIdCounter++;
+                newId = Guid.NewGuid();
             }
-            _dataIdsCollection.Add(_dataIdCounter);
-            return _dataIdCounter;
+            _dataIdsCollection.Add(newId);
+            return newId;
         }
 
-        private readonly HashSet<int> _dataIdsCollection = new HashSet<int>();
+        private readonly HashSet<Guid> _dataIdsCollection = new HashSet<Guid>();
 
         #endregion
 
@@ -728,27 +728,25 @@ namespace GraphX
             if (graph == null) graph = LogicCore.Graph;
             if (graph == null) return;
             _dataIdsCollection.Clear();
-            _dataIdCounter = 1;
             var count = graph.Vertices.Count();
             for (var i = 0; i < count; i++)
             {
                 var element = graph.Vertices.ElementAt(i);
-                if (element.ID != -1 && !_dataIdsCollection.Contains(element.ID)) 
+                if (element.ID != Guid.Empty && !_dataIdsCollection.Contains(element.ID)) 
                     _dataIdsCollection.Add(element.ID);
             }
-            foreach (var item in graph.Vertices.Where(a => a.ID == -1))
+            foreach (var item in graph.Vertices.Where(a => a.ID == Guid.Empty))
                 item.ID = GetNextUniqueId();
 
             _dataIdsCollection.Clear();
-            _dataIdCounter = 1;
             count = graph.Edges.Count();
             for (var i = 0; i < count; i++)
             {
                 var element2 = graph.Edges.ElementAt(i);
-                if (element2.ID != -1 && !_dataIdsCollection.Contains(element2.ID))
+                if (element2.ID != Guid.Empty && !_dataIdsCollection.Contains(element2.ID))
                     _dataIdsCollection.Add(element2.ID);
             }
-            foreach (var item in graph.Edges.Where(a => a.ID == -1))
+            foreach (var item in graph.Edges.Where(a => a.ID == Guid.Empty))
                 item.ID = GetNextUniqueId();
         }
         #endregion 
@@ -1042,7 +1040,7 @@ namespace GraphX
         private class LabelOverlapData
         {
             public bool IsVertex;
-            public int Id;
+            public Guid Id;
         }
 
         /// <summary>
@@ -1058,7 +1056,7 @@ namespace GraphX
 
         private void ParallelizeEdges()
         {
-            var usedIds = _edgeslist.Count > 20 ? new HashSet<int>() as ICollection<int> : new List<int>();
+            var usedIds = _edgeslist.Count > 20 ? new HashSet<Guid>() as ICollection<Guid> : new List<Guid>();
 
             foreach (var item in EdgesList)
             {
@@ -1283,13 +1281,13 @@ namespace GraphX
             foreach (var item in VertexList) //ALWAYS serialize vertices first
             {
                 dlist.Add(new DataSaveModel { Position = item.Value.GetPosition(), Data = item.Key });
-                if (item.Key.ID == -1) throw new GX_InvalidDataException("SaveIntoFile() -> All vertex datas must have positive unique ID!");
+                if (item.Key.ID == Guid.Empty) throw new GX_InvalidDataException("SaveIntoFile() -> All vertex datas must have positive unique ID!");
             }
             foreach (var item in EdgesList)
             {
                // item.Key.RoutingPoints = new Point[] { new Point(0, 123), new Point(12, 12), new Point(10, 234.5) };
                 dlist.Add(new DataSaveModel { Position = new Point(), Data = item.Key });
-                if (item.Key.ID == -1) throw new GX_InvalidDataException("SaveIntoFile() -> All edge datas must have positive unique ID!");
+                if (item.Key.ID == Guid.Empty) throw new GX_InvalidDataException("SaveIntoFile() -> All edge datas must have positive unique ID!");
             }
 
             LogicCore.SaveDataToFile(filename, dlist);
