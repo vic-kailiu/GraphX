@@ -80,9 +80,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Documents\AIV.cs">
-      <Link>Properties\AIV.cs</Link>
-    </Compile>
     <Compile Include="Animations\DeleteFadeAnimation.cs" />
     <Compile Include="Animations\DeleteShrinkAnimation.cs" />
     <Compile Include="Animations\MouseOverScaleAnimation.cs" />

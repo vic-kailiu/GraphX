@@ -62,9 +62,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Documents\AIV.cs">
-      <Link>Properties\AIV.cs</Link>
-    </Compile>
     <Compile Include="GraphXComponents\AlgorithmBase.cs" />
     <Compile Include="GraphXComponents\EdgeRouting\EdgeBundling\BundleEdgeRouting.cs" />
     <Compile Include="GraphXComponents\EdgeRouting\EdgeBundling\BundleEdgeRoutingParameters.cs" />
