@@ -489,8 +489,7 @@ namespace GraphX
         }
 
         #endregion
-
-
+        
         #region Manual path controls
         /// <summary>
         /// Gets current edge path geometry object

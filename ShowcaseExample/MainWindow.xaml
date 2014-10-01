@@ -85,7 +85,9 @@
                     </DockPanel>
                 </GroupBox>
             </DockPanel>
-            <graphxctrl:ZoomControl x:Name="tg_zoomctrl" Grid.Row="1">
+            <graphxctrl:ZoomControl x:Name="tg_zoomctrl"
+                                    Grid.Row="1"
+                                    MouseDoubleClick="tg_zoomctrl_MouseDoubleClick">
                 <local:GraphAreaExample x:Name="tg_Area">
                     <local:GraphAreaExample.Resources>
                         <ResourceDictionary>

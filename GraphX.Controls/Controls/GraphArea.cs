@@ -936,7 +936,7 @@ namespace GraphX
         public override void ComputeEdgeRoutesByVertex(VertexControl vc, bool vertexDataNeedUpdate = true)
         {
             if (LogicCore == null || LogicCore.AlgorithmStorage == null || LogicCore.AlgorithmStorage.EdgeRouting == null)
-                throw new GX_InvalidDataException("LogicCore or algorithm storage is not initialized!");
+                return;// throw new GX_InvalidDataException("LogicCore or algorithm storage is not initialized!");
             if (vc == null) return;
             var vdata = vc.Vertex as TVertex;
             if (vdata == null) return;

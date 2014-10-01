@@ -31,7 +31,7 @@ namespace ShowcaseExample
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             this.ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
-            new MainWindow().Show();
+            ShowcaseExample.MainWindow.MW().Show();
         }
     }
 }

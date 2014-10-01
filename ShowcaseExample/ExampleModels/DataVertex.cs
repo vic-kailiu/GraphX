@@ -71,7 +71,6 @@ namespace ShowcaseExample
             if (string.IsNullOrEmpty(text)) Text = num == 0 ? text : textArray[num];
             else Text = text;
             DataImage = new BitmapImage(new Uri(imgArray[num], UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
-            
         }
     }
 }

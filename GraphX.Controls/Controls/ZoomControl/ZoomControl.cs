@@ -1365,7 +1365,8 @@ namespace GraphX.Controls
         {
             if(Mode == ZoomControlModes.Fill)
                 DoZoomToFill();
-            else Mode = ZoomControlModes.Fill;
+            else 
+                Mode = ZoomControlModes.Fill;
         }
 
         private void ZoomToInternal(Rect rect, bool setDelta = false)

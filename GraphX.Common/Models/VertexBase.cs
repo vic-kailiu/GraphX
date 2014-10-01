@@ -7,6 +7,10 @@ namespace GraphX
         public VertexBase()
         {
             ID = Guid.Empty;
+            while (ID == Guid.Empty)
+            {
+                ID = Guid.NewGuid();
+            }
         }
         /// <summary>
         /// Unique vertex ID
