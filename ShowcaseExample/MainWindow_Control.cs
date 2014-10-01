@@ -14,6 +14,9 @@ using System.Diagnostics;
 using System.Windows.Markup;
 using GraphX.Controls;
 using System.Windows.Media;
+using System.Windows.Controls;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 
 namespace ShowcaseExample
 {
@@ -68,6 +71,7 @@ namespace ShowcaseExample
             tg_Area.RelayoutFinished += tg_Area_RelayoutFinished;
 
             ZoomControl.SetViewFinderVisibility(tg_zoomctrl, System.Windows.Visibility.Visible);
+            tg_zoomctrl.Zoom = 1;
 
             // Animation
             tg_Area.DeleteAnimation = AnimationFactory.CreateDeleteAnimation(DeleteAnimation.Fade);
@@ -297,8 +301,11 @@ namespace ShowcaseExample
 
         private void tg_zoomctrl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
-            addVertex(pos.X, pos.Y);
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
+                addVertex(pos.X, pos.Y);
+            }
         }
 
         private void addVertex(double x, double y)
@@ -320,11 +327,18 @@ namespace ShowcaseExample
             DragBehaviour.SetUpdateEdgesOnMove(vc, true);
             tg_Area.AddVertex(data, vc);
 
-            GraphAreaBase.SetX(vc, x, true);
-            GraphAreaBase.SetY(vc, y, true);
-            //tg_Area.RelayoutGraph(true);
-
-            tg_zoomctrl.ZoomToFill();
+            vc.SetPosition(new Point(x, y));
+            if (tg_Area.VertexList.Count == 1)
+            {
+                //tg_zoomctrl.ZoomToFill();
+                Button button = tg_zoomctrl.ViewFinder.FindName("FillButton") as Button;
+                if (button != null)
+                {
+                    ButtonAutomationPeer peer = new ButtonAutomationPeer(button);
+                    IInvokeProvider invokeProv = (IInvokeProvider)peer.GetPattern(PatternInterface.Invoke);
+                    invokeProv.Invoke();
+                }
+            }
         }
     }
 }
