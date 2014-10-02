@@ -20,6 +20,12 @@ using System.Windows.Automation.Provider;
 
 namespace ShowcaseExample
 {
+    public enum RoutedCommands
+    {
+        EdgeDrag,
+        VertexDragDrop
+    }
+
     public partial class MainWindow
     {
         private static MainWindow mw = null;
@@ -30,12 +36,19 @@ namespace ShowcaseExample
             return mw;
         }
 
-        public void RouteEdgeDragging(VertexControl vc)
+        public void RouteCommand(VertexControl vc, RoutedCommands rc)
         {
-            if (_isInEDMode)
-                return;
-
-            StartEdgeDragging(vc);
+            switch (rc)
+            {
+                case RoutedCommands.EdgeDrag:
+                    if (_isInEDMode)
+                        return;
+                    StartEdgeDragging(vc);
+                    return;
+                case RoutedCommands.VertexDragDrop:
+                    StartVertexDragDrop(vc);
+                    return;
+            }
         }
 
         private void ThemedGraph_Constructor()
@@ -157,7 +170,7 @@ namespace ShowcaseExample
         {
             addVertex(Rand.Next(0, 200), Rand.Next(0, 200));
         }
-  
+
         #region Manual edge drawing
 
         private bool _isInEDMode = false;
@@ -256,6 +269,11 @@ namespace ShowcaseExample
         }
 
         #endregion
+
+        private void StartVertexDragDrop(VertexControl vc)
+        {
+            DragDrop.DoDragDrop(vc, vc.Vertex, DragDropEffects.Link);
+        }
 
         void tg_Area_RelayoutFinished(object sender, EventArgs e)
         {

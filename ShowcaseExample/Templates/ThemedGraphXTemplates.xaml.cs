@@ -16,25 +16,16 @@ namespace ShowcaseExample.Templates
             InitializeComponent();
         }
 
-        private void NotifyMainWindow(object sender, RoutedEventArgs e)
+        private void NotifyMainWindow(object sender, EventArgs e)
         {
             VertexControl vc = ((FrameworkElement)sender).TemplatedParent as VertexControl;
             if (vc!=null)
             {
-                MainWindow.MW().RouteEdgeDragging(vc);
+                if (sender is Button)
+                    MainWindow.MW().RouteCommand(vc, RoutedCommands.EdgeDrag);
+                else if (sender is Image)
+                    MainWindow.MW().RouteCommand(vc, RoutedCommands.VertexDragDrop);
             }
-        }
-
-        private string GetParents(Object element, int parentLevel)
-        {
-            string returnValue = String.Format("[{0}] {1}", parentLevel, element.GetType());
-            if (element is FrameworkElement)
-            {
-                if (((FrameworkElement)element).Parent != null)
-                    returnValue += String.Format("{0}{1}",
-                        Environment.NewLine, GetParents(((FrameworkElement)element).Parent, parentLevel + 1));
-            }
-            return returnValue;
         }
     }
 }
