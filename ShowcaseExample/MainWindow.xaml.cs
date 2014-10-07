@@ -27,7 +27,6 @@ namespace ShowcaseExample
         {
             DataContext = this;
             InitializeComponent();
-            ThemedGraph_Constructor();
             Closed += MainWindow_Closed;
 
             Loaded += MainWindow_Loaded;
@@ -36,6 +35,7 @@ namespace ShowcaseExample
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            ThemedGraph_Constructor();
         }
 
         void MainWindow_Closed(object sender, EventArgs e)
@@ -50,5 +50,6 @@ namespace ShowcaseExample
             if(PropertyChanged != null)
                 PropertyChanged.Invoke(this, new PropertyChangedEventArgs(name));
         }
+
     }
 }

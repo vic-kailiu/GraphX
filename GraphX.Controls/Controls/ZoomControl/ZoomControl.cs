@@ -643,6 +643,8 @@ namespace GraphX.Controls
         /// </summary>
         public bool IsAnimationDisabled { get; set; }
 
+        public bool IsMouseWheelEnabled { get; set; }
+
         /// <summary>
         /// Use Ctrl key to zoom with mouse wheel or without it
         /// </summary>
@@ -1038,11 +1040,13 @@ namespace GraphX.Controls
             }
             else
             {
-                PreviewMouseWheel += ZoomControl_MouseWheel;
+                MouseWheel += ZoomControl_MouseWheel;
+                //PreviewMouseWheel += ZoomControl_MouseWheel;
                 PreviewMouseDown += ZoomControl_PreviewMouseDown;
                 MouseDown += ZoomControl_MouseDown;
                 MouseUp += ZoomControl_MouseUp;
                 UseCtrlForMouseWheel = true;
+                IsMouseWheelEnabled = true;
 
                 var binding = new CommandBinding(Refocus, RefocusView, CanRefocusView);
                 CommandBindings.Add(binding);
@@ -1103,9 +1107,25 @@ namespace GraphX.Controls
             return new Rect(tl.X, tl.Y, Math.Abs(Math.Abs(br.X) - Math.Abs(tl.X)), Math.Abs(Math.Abs(br.Y) - Math.Abs(tl.Y)));
         }
 
+        public void RouteMouseWheel(Point mousePosition, double delta)
+        {
+            var handle = IsMouseWheelEnabled &&
+                (((Keyboard.Modifiers & ModifierKeys.Control) > 0 && ModifierMode == ZoomViewModifierMode.None) || UseCtrlForMouseWheel);
+            if (!handle) return;
+
+            var origoPosition = new Point(ActualWidth / 2, ActualHeight / 2);
+
+            DoZoom(
+                Math.Max(1 / MaxZoomDelta, Math.Min(MaxZoomDelta, delta / 10000.0 * ZoomDeltaMultiplier + 1)),
+                origoPosition,
+                UseAbsoluteZoomOnMouseWheel ? origoPosition : mousePosition,
+                UseAbsoluteZoomOnMouseWheel ? origoPosition : mousePosition);
+        }
+
         private void ZoomControl_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            var handle = ((Keyboard.Modifiers & ModifierKeys.Control) > 0 && ModifierMode == ZoomViewModifierMode.None) || UseCtrlForMouseWheel;
+            var handle = IsMouseWheelEnabled &&
+                (((Keyboard.Modifiers & ModifierKeys.Control) > 0 && ModifierMode == ZoomViewModifierMode.None) || UseCtrlForMouseWheel);
             if (!handle) return;
 
             e.Handled = true;
@@ -1237,11 +1257,8 @@ namespace GraphX.Controls
         private void OnZoomAnimationCompleted()
         {
             if (ZoomAnimationCompleted != null)
-                ZoomAnimationCompleted(this, EventArgs.Empty);
+                ZoomAnimationCompleted(this, new EventArgs());
         }
-
-
-
 
         private void DoZoomAnimation(double targetZoom, double transformX, double transformY, bool isZooming = true)
         {

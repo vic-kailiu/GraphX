@@ -38,6 +38,10 @@ namespace ShowcaseExample
 
         public void RouteCommand(VertexControl vc, RoutedCommands rc)
         {
+            GraphAreaExample parent = (GraphAreaExample) vc.Parent;
+            if (parent == null || parent == bg_Area)
+                return;
+
             switch (rc)
             {
                 case RoutedCommands.EdgeDrag:
@@ -53,9 +57,28 @@ namespace ShowcaseExample
 
         private void ThemedGraph_Constructor()
         {
-            var tg_Logic = new LogicCoreExample();
-            tg_Area.LogicCore = tg_Logic;
+            SetupForeground();
+            SetupBackground();
 
+            tg_zoomctrl.SetValue(BackgroundProperty, null);
+            //tg_zoomctrl.IsMouseWheelEnabled = false;
+            SetForegroundSyncToBackground();
+
+            // related highlighting option
+            tg_highlightStrategy.ItemsSource = Enum.GetValues(typeof(HighlightStrategy)).Cast<HighlightStrategy>();
+            tg_highlightStrategy.SelectedItem = HighlightStrategy.UseExistingControls;
+            tg_highlightType.ItemsSource = Enum.GetValues(typeof(GraphControlType)).Cast<GraphControlType>();
+            tg_highlightType.SelectedItem = GraphControlType.VertexAndEdge;
+            tg_highlightEdgeType.ItemsSource = Enum.GetValues(typeof(EdgesType)).Cast<EdgesType>();
+            tg_highlightEdgeType.SelectedItem = EdgesType.All;
+            tg_highlightEnabled_Checked(null, null);
+
+            TGRegisterCommands();
+        }
+
+        private void SetupForeground()
+        {
+            var tg_Logic = new LogicCoreExample();
             tg_Logic.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.LinLog;
             tg_Logic.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.None;
             tg_Logic.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
@@ -64,24 +87,19 @@ namespace ShowcaseExample
 
             tg_Logic.Graph = new GraphExample();
 
+            tg_Area.LogicCore = tg_Logic;
+
             //tg_Area.MoveAnimation = AnimationFactory.CreateMoveAnimation(MoveAnimation.Move, TimeSpan.FromSeconds(0.5));
             //tg_Area.DeleteAnimation = AnimationFactory.CreateDeleteAnimation(DeleteAnimation.Fade, TimeSpan.FromSeconds(0.3));
             //tg_Area.MouseOverAnimation = AnimationFactory.CreateMouseOverAnimation(MouseOverAnimation.Scale);
 
-            tg_highlightStrategy.ItemsSource = Enum.GetValues(typeof(HighlightStrategy)).Cast<HighlightStrategy>();
-            tg_highlightStrategy.SelectedItem = HighlightStrategy.UseExistingControls;
-            tg_highlightType.ItemsSource = Enum.GetValues(typeof(GraphControlType)).Cast<GraphControlType>();
-            tg_highlightType.SelectedItem = GraphControlType.VertexAndEdge;
-            tg_highlightEdgeType.ItemsSource = Enum.GetValues(typeof(EdgesType)).Cast<EdgesType>();
-            tg_highlightEdgeType.SelectedItem = EdgesType.All;
-
-            tg_highlightEnabled_Checked(null, null);
-
             tg_Area.VertexSelected += tg_Area_VertexSelected;
+
+            //edge dragging
             tg_Area.VertexMouseMove += tg_Area_VertexMouseMove;
-            tg_zoomctrl.PreviewMouseMove += tg_Area_MouseMove;
+            bg_zoomctrl.PreviewMouseMove += tg_Area_MouseMove;
             tg_zoomctrl.MouseDown += tg_zoomctrl_MouseDown;
-            tg_Area.RelayoutFinished += tg_Area_RelayoutFinished;
+            //tg_Area.RelayoutFinished += tg_Area_RelayoutFinished;
 
             ZoomControl.SetViewFinderVisibility(tg_zoomctrl, System.Windows.Visibility.Visible);
             tg_zoomctrl.Zoom = 1;
@@ -89,9 +107,71 @@ namespace ShowcaseExample
             // Animation
             tg_Area.DeleteAnimation = AnimationFactory.CreateDeleteAnimation(DeleteAnimation.Fade);
             tg_Area.MouseOverAnimation = AnimationFactory.CreateMouseOverAnimation(MouseOverAnimation.None);
-
-            TGRegisterCommands();
         }
+
+        private void SetupBackground()
+        {
+            var bg_Logic = new LogicCoreExample();
+            bg_Logic.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.LinLog;
+            bg_Logic.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.None;
+            bg_Logic.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
+            bg_Logic.EdgeCurvingEnabled = true;
+            bg_Logic.AsyncAlgorithmCompute = false;
+
+            bg_Logic.Graph = new GraphExample();
+
+            bg_Area.LogicCore = bg_Logic;
+
+            //bg_Area.MoveAnimation = AnimationFactory.CreateMoveAnimation(MoveAnimation.Move, TimeSpan.FromSeconds(0.5));
+            //bg_Area.DeleteAnimation = AnimationFactory.CreateDeleteAnimation(DeleteAnimation.Fade, TimeSpan.FromSeconds(0.3));
+            //bg_Area.MouseOverAnimation = AnimationFactory.CreateMouseOverAnimation(MouseOverAnimation.Scale);
+
+            //bg_Area.VertexSelected += tg_Area_VertexSelected;
+            //bg_Area.VertexMouseMove += tg_Area_VertexMouseMove;
+            //bg_zoomctrl.PreviewMouseMove += tg_Area_MouseMove;
+            //bg_zoomctrl.MouseDown += tg_zoomctrl_MouseDown;
+            //bg_Area.RelayoutFinished += tg_Area_RelayoutFinished;
+
+            ZoomControl.SetViewFinderVisibility(bg_zoomctrl, System.Windows.Visibility.Visible);
+            bg_zoomctrl.Zoom = 1;
+
+            // Animation
+            bg_Area.DeleteAnimation = AnimationFactory.CreateDeleteAnimation(DeleteAnimation.Fade);
+            bg_Area.MouseOverAnimation = AnimationFactory.CreateMouseOverAnimation(MouseOverAnimation.None);
+        }
+
+        #region ZoomControl Sync
+
+        private void SetForegroundSyncToBackground()
+        {
+            tg_zoomctrl.PropertyChanged -= tg_zoomctrl_PropertyChanged;
+            bg_zoomctrl.PropertyChanged += bg_zoomctrl_PropertyChanged;
+            tg_zoomctrl.IsAnimationDisabled = true;
+            bg_zoomctrl.IsAnimationDisabled = false;
+        }
+
+        private void bg_zoomctrl_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            tg_zoomctrl.Zoom = bg_zoomctrl.Zoom;
+            tg_zoomctrl.TranslateX = bg_zoomctrl.TranslateX;
+            tg_zoomctrl.TranslateY = bg_zoomctrl.TranslateY;
+        }
+
+        private void SetBackgroundSyncToForeground()
+        {
+            bg_zoomctrl.PropertyChanged -= bg_zoomctrl_PropertyChanged;
+            tg_zoomctrl.PropertyChanged += tg_zoomctrl_PropertyChanged;
+            bg_zoomctrl.IsAnimationDisabled = true;
+            tg_zoomctrl.IsAnimationDisabled = false;
+        }
+        private void tg_zoomctrl_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            bg_zoomctrl.Zoom = tg_zoomctrl.Zoom;
+            bg_zoomctrl.TranslateX = tg_zoomctrl.TranslateX;
+            bg_zoomctrl.TranslateY = tg_zoomctrl.TranslateY;
+        }
+
+        #endregion
 
         #region Commands
 
@@ -274,13 +354,13 @@ namespace ShowcaseExample
             DragDrop.DoDragDrop(vc, vc.Vertex, DragDropEffects.Link);
         }
 
-        void tg_Area_RelayoutFinished(object sender, EventArgs e)
-        {
-            if (tg_Area.LogicCore.AsyncAlgorithmCompute)
-                tg_loader.Visibility = System.Windows.Visibility.Collapsed;
+        //void tg_Area_RelayoutFinished(object sender, EventArgs e)
+        //{
+        //    if (tg_Area.LogicCore.AsyncAlgorithmCompute)
+        //        tg_loader.Visibility = System.Windows.Visibility.Collapsed;
 
-            tg_zoomctrl.ZoomToFill();
-        }
+        //    tg_zoomctrl.ZoomToFill();
+        //}
 
         private void tg_highlightStrategy_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
@@ -316,14 +396,21 @@ namespace ShowcaseExample
                 HighlightBehaviour.SetHighlightEdges(item.Value, (EdgesType)tg_highlightEdgeType.SelectedItem);
         }
 
-        private void tg_zoomctrl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void bg_zoomctrl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
+                var pos = bg_zoomctrl.TranslatePoint(e.GetPosition(bg_zoomctrl), bg_Area);
                 addVertex(pos.X, pos.Y);
             }
         }
+
+        private void tg_zoomctrl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            bg_zoomctrl.RouteMouseWheel(e.GetPosition(bg_zoomctrl), e.Delta);
+            e.Handled = true;
+        }
+
 
         private void addVertex(double x, double y)
         {
@@ -340,15 +427,13 @@ namespace ShowcaseExample
             tg_Area.LogicCore.Graph.AddVertex(data);
 
             VertexControl vc = new VertexControl(data);
-            DragBehaviour.SetIsDragEnabled(vc, true);
-            DragBehaviour.SetUpdateEdgesOnMove(vc, true);
             tg_Area.AddVertex(data, vc);
 
             vc.SetPosition(new Point(x, y));
             if (tg_Area.VertexList.Count == 1)
             {
                 //tg_zoomctrl.ZoomToFill();
-                Button button = tg_zoomctrl.ViewFinder.FindName("FillButton") as Button;
+                Button button = bg_zoomctrl.ViewFinder.FindName("FillButton") as Button;
                 if (button != null)
                 {
                     ButtonAutomationPeer peer = new ButtonAutomationPeer(button);
@@ -356,6 +441,23 @@ namespace ShowcaseExample
                     invokeProv.Invoke();
                 }
             }
+
+            var data1 = new DataVertex("Vertex1111");
+
+            data1.Age = Rand.Next(18, 75);
+            data1.Gender = ThemedDataStorage.Gender[Rand.Next(0, 2)];
+            if (data1.Gender == ThemedDataStorage.Gender[0])
+                data1.PersonImage = new BitmapImage(new Uri(@"pack://application:,,,/ShowcaseExample;component/Images/female.png", UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
+            else data1.PersonImage = new BitmapImage(new Uri(@"pack://application:,,,/ShowcaseExample;component/Images/male.png", UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
+            data1.Profession = ThemedDataStorage.Professions[Rand.Next(0, ThemedDataStorage.Professions.Count - 1)];
+            data1.Name = "TheOne";
+
+            bg_Area.LogicCore.Graph.AddVertex(data1);
+
+            VertexControl vc1 = new VertexControl(data1);
+            bg_Area.AddVertex(data1, vc1);
+
+            vc1.SetPosition(new Point(0, 0));
         }
     }
 }

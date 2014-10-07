@@ -87,8 +87,24 @@
             </DockPanel>
             <graphxctrl:ZoomControl x:Name="tg_zoomctrl"
                                     Grid.Row="1"
-                                    MouseDoubleClick="tg_zoomctrl_MouseDoubleClick">
+                                    Panel.ZIndex="1"
+                                    PreviewMouseWheel="tg_zoomctrl_PreviewMouseWheel">
+                <!--  MouseDoubleClick="tg_zoomctrl_MouseDoubleClick">  -->
                 <local:GraphAreaExample x:Name="tg_Area">
+                    <local:GraphAreaExample.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.MergedDictionaries>
+                                <ResourceDictionary Source="Templates/TransparentTooltips.xaml" />
+                            </ResourceDictionary.MergedDictionaries>
+                        </ResourceDictionary>
+                    </local:GraphAreaExample.Resources>
+                </local:GraphAreaExample>
+            </graphxctrl:ZoomControl>
+            <graphxctrl:ZoomControl x:Name="bg_zoomctrl"
+                                    Grid.Row="1"
+                                    Panel.ZIndex="0"
+                                    MouseDoubleClick="bg_zoomctrl_MouseDoubleClick">
+                <local:GraphAreaExample x:Name="bg_Area">
                     <local:GraphAreaExample.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.MergedDictionaries>
