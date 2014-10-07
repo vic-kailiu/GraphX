@@ -93,7 +93,6 @@ namespace ShowcaseExample
             TGRegisterCommands();
         }
 
-
         #region Commands
 
         #region TGRelayoutCommand

@@ -26,6 +26,7 @@ namespace ShowcaseExample.Templates
                 else if (sender is Image)
                     MainWindow.MW().RouteCommand(vc, RoutedCommands.VertexDragDrop);
             }
+            return;
         }
     }
 }

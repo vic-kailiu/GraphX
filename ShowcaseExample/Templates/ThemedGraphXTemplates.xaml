@@ -188,8 +188,8 @@
                             <Image Grid.RowSpan="2"
                                    Width="60"
                                    Margin="3"
+                                   PreviewMouseLeftButtonDown="NotifyMainWindow"
                                    Source="{Binding PersonImage}"
-                                   MouseLeftButtonDown="NotifyMainWindow"
                                    Stretch="UniformToFill" />
                             <TextBlock Grid.Row="0"
                                        Grid.Column="1"
@@ -397,16 +397,12 @@
             </Setter.Value>
         </Setter>
 
-
         <Style.Triggers>
             <Trigger Property="gxl:HighlightBehaviour.Highlighted" Value="True">
                 <Setter Property="Foreground" Value="Gold" />
                 <Setter Property="StrokeThickness" Value="5" />
             </Trigger>
         </Style.Triggers>
-
-
-
 
     </Style>
 
