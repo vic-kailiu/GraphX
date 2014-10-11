@@ -142,6 +142,12 @@ namespace ShowcaseExample
 
         #region ZoomControl Sync
 
+        private void tg_zoomctrl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            bg_zoomctrl.RouteMouseWheel(e.GetPosition(bg_zoomctrl), e.Delta);
+            e.Handled = true;
+        }
+
         private void SetForegroundSyncToBackground()
         {
             tg_zoomctrl.PropertyChanged -= tg_zoomctrl_PropertyChanged;
@@ -164,6 +170,7 @@ namespace ShowcaseExample
             bg_zoomctrl.IsAnimationDisabled = true;
             tg_zoomctrl.IsAnimationDisabled = false;
         }
+
         private void tg_zoomctrl_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             bg_zoomctrl.Zoom = tg_zoomctrl.Zoom;
@@ -173,228 +180,7 @@ namespace ShowcaseExample
 
         #endregion
 
-        #region Commands
-
-        #region TGRelayoutCommand
-        private bool TGRelayoutCommandCanExecute(object sender)
-        {
-            return true; // tg_Area.Graph != null && tg_Area.VertexList.Count > 0;
-        }
-
-        private void TGRelayoutCommandExecute(object sender)
-        {
-            if (tg_Area.LogicCore.AsyncAlgorithmCompute)
-                tg_loader.Visibility = System.Windows.Visibility.Visible;
-
-            tg_Area.RelayoutGraph(true);
-            /*if (tg_edgeMode.SelectedIndex == 0 && tg_Area.EdgesList.Count == 0)
-                tg_Area.GenerateAllEdges();*/
-        }
-        #endregion
-
-        void TGRegisterCommands()
-        {
-            tg_but_relayout.Command = new SimpleCommand(TGRelayoutCommandCanExecute, TGRelayoutCommandExecute);
-        }
-        #endregion
-
-        void tg_Area_VertexSelected(object sender, VertexSelectedEventArgs args)
-        {
-            if (_isInEDMode)
-            {
-                if (_edVertex == args.VertexControl)
-                    return;
-
-                var data = new DataEdge(_edVertex.Vertex as DataVertex, args.VertexControl.Vertex as DataVertex);
-                tg_Area.LogicCore.Graph.AddEdge(data);
-                var ec = new EdgeControl(_edVertex, args.VertexControl, data) { DataContext = data };
-                tg_Area.InsertEdge(data, ec);
-
-                _isInEDMode = false;
-                clearEdgeDrawing();
-                return;
-            }
-
-            if (args.MouseArgs.RightButton == MouseButtonState.Pressed)
-            {
-                args.VertexControl.ContextMenu = new System.Windows.Controls.ContextMenu();
-                var menuitem = new System.Windows.Controls.MenuItem() { Header = "Delete item", Tag = args.VertexControl };
-                menuitem.Click += tg_deleteitem_Click;
-                args.VertexControl.ContextMenu.Items.Add(menuitem);
-
-                var str = new StringBuilder();
-                using (var writer = new StringWriter(str))
-                    XamlWriter.Save(args.VertexControl.ContextMenu.Template, writer);
-                Debug.Write(str);
-            }
-        }
-
-        void tg_deleteitem_Click(object sender, RoutedEventArgs e)
-        {
-            var vc = (sender as System.Windows.Controls.MenuItem).Tag as VertexControl;
-            if (vc != null)
-            {
-                foreach (var item in tg_Area.GetRelatedControls(vc, GraphControlType.Edge, EdgesType.All))
-                {
-                    var ec = item as EdgeControl;
-                    tg_Area.LogicCore.Graph.RemoveEdge(ec.Edge as DataEdge);
-                    tg_Area.RemoveEdge(ec.Edge as DataEdge);
-                }
-                tg_Area.RemoveVertex(vc.Vertex as DataVertex);
-                tg_Area.LogicCore.Graph.RemoveVertex(vc.Vertex as DataVertex);
-            }
-        }
-
-        private void tg_but_randomgraph_Click(object sender, RoutedEventArgs e)
-        {
-            addVertex(Rand.Next(0, 200), Rand.Next(0, 200));
-        }
-
-        #region Manual edge drawing
-
-        private bool _isInEDMode = false;
-        private PathGeometry _edGeo;
-        private VertexControl _edVertex;
-        private EdgeControl _edEdge;
-        private DataVertex _edFakeDV;
-
-        private void StartEdgeDragging(VertexControl vc)
-        {
-            if (_isInEDMode)
-                return;
-
-            _edVertex = vc;
-            Point startPoint = tg_zoomctrl.TranslatePoint(Mouse.GetPosition(tg_zoomctrl), tg_Area);
-            Point pos = new Point(startPoint.X + 2, startPoint.Y + 2);
-            _edFakeDV = new DataVertex() { ID = Guid.NewGuid() };
-            _edGeo = new PathGeometry(new PathFigureCollection() { 
-                                        new PathFigure() 
-                                        { 
-                                            IsClosed = false, 
-                                            StartPoint = startPoint, 
-                                            Segments = new PathSegmentCollection() { new PolyLineSegment(new List<Point>() { pos }, true) }
-                                        } });
-            var dedge = new DataEdge(_edVertex.Vertex as DataVertex, _edFakeDV);
-            _edEdge = new EdgeControl(_edVertex, null, dedge) { ManualDrawing = true };
-            tg_Area.AddEdge(dedge, _edEdge);
-            tg_Area.LogicCore.Graph.AddVertex(_edFakeDV);
-            tg_Area.LogicCore.Graph.AddEdge(dedge);
-            _edEdge.SetEdgePathManually(_edGeo);
-            _isInEDMode = true;
-        }
-
-        void tg_Area_VertexMouseMove(object sender, VertexMovedEventArgs e)
-        {
-            if (_isInEDMode && _edGeo != null && _edEdge != null && _edVertex != null
-                && _edVertex != e.VertexControl)
-            {
-                VertexControl vc = e.VertexControl;
-                var pos = vc.GetPosition();
-                if (vc.ActualWidth > 0)
-                {
-                    pos.X += vc.ActualWidth / 2;
-                    pos.Y += vc.ActualHeight / 2;
-                }
-                var lastseg = _edGeo.Figures[0].Segments[_edGeo.Figures[0].Segments.Count - 1] as PolyLineSegment;
-                lastseg.Points[lastseg.Points.Count - 1] = pos;
-                _edEdge.SetEdgePathManually(_edGeo);
-            }
-        }
-
-        void tg_zoomctrl_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (_isInEDMode && _edGeo != null && _edEdge != null && _edVertex != null && e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
-            {
-                //place point
-                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
-                pos.X += 2;
-                pos.Y += 2;
-                var lastseg = _edGeo.Figures[0].Segments[_edGeo.Figures[0].Segments.Count - 1] as PolyLineSegment;
-                lastseg.Points.Add(pos);
-                _edEdge.SetEdgePathManually(_edGeo);
-            }
-        }
-
-        void tg_Area_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            if (_isInEDMode && _edGeo != null && _edEdge != null && _edVertex != null)
-            {
-                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
-                pos.X += 2;
-                pos.Y += 2;
-                var lastseg = _edGeo.Figures[0].Segments[_edGeo.Figures[0].Segments.Count - 1] as PolyLineSegment;
-                lastseg.Points[lastseg.Points.Count - 1] = pos;
-                _edEdge.SetEdgePathManually(_edGeo);
-            }
-        }
-
-        void clearEdgeDrawing()
-        {
-            _edGeo = null;
-
-            if (_edFakeDV != null)
-                tg_Area.LogicCore.Graph.RemoveVertex(_edFakeDV);
-            _edFakeDV = null;
-
-            _edVertex = null;
-
-            DataEdge dedge = _edEdge.Edge as DataEdge;
-            if (dedge != null)
-            {
-                tg_Area.RemoveEdge(dedge);
-                tg_Area.LogicCore.Graph.RemoveEdge(dedge);
-            }
-            _edEdge = null;
-        }
-
-        #endregion
-
-        private void StartVertexDragDrop(VertexControl vc)
-        {
-            DragDrop.DoDragDrop(vc, vc.Vertex, DragDropEffects.Link);
-        }
-
-        //void tg_Area_RelayoutFinished(object sender, EventArgs e)
-        //{
-        //    if (tg_Area.LogicCore.AsyncAlgorithmCompute)
-        //        tg_loader.Visibility = System.Windows.Visibility.Collapsed;
-
-        //    tg_zoomctrl.ZoomToFill();
-        //}
-
-        private void tg_highlightStrategy_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            foreach (var item in tg_Area.VertexList)
-                HighlightBehaviour.SetHighlightStrategy(item.Value, (HighlightStrategy)tg_highlightStrategy.SelectedItem);
-            foreach (var item in tg_Area.EdgesList)
-                HighlightBehaviour.SetHighlightStrategy(item.Value, (HighlightStrategy)tg_highlightStrategy.SelectedItem);
-        }
-
-        private void tg_highlightType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            foreach (var item in tg_Area.VertexList)
-                HighlightBehaviour.SetHighlightControl(item.Value, (GraphControlType)tg_highlightType.SelectedItem);
-            foreach (var item in tg_Area.EdgesList)
-                HighlightBehaviour.SetHighlightControl(item.Value, (GraphControlType)tg_highlightType.SelectedItem);
-        }
-
-        private void tg_highlightEnabled_Checked(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in tg_Area.VertexList)
-                HighlightBehaviour.SetIsHighlightEnabled(item.Value, (bool)tg_highlightEnabled.IsChecked);
-            foreach (var item in tg_Area.EdgesList)
-                HighlightBehaviour.SetIsHighlightEnabled(item.Value, (bool)tg_highlightEnabled.IsChecked);
-
-            tg_highlightStrategy.IsEnabled = tg_highlightType.IsEnabled = tg_highlightEdgeType.IsEnabled = (bool)tg_highlightEnabled.IsChecked;
-        }
-
-        private void tg_highlightEdgeType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            foreach (var item in tg_Area.VertexList)
-                HighlightBehaviour.SetHighlightEdges(item.Value, (EdgesType)tg_highlightEdgeType.SelectedItem);
-            foreach (var item in tg_Area.EdgesList)
-                HighlightBehaviour.SetHighlightEdges(item.Value, (EdgesType)tg_highlightEdgeType.SelectedItem);
-        }
+        #region addVertex
 
         private void bg_zoomctrl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -404,13 +190,6 @@ namespace ShowcaseExample
                 addVertex(pos.X, pos.Y);
             }
         }
-
-        private void tg_zoomctrl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            bg_zoomctrl.RouteMouseWheel(e.GetPosition(bg_zoomctrl), e.Delta);
-            e.Handled = true;
-        }
-
 
         private void addVertex(double x, double y)
         {
@@ -459,5 +238,243 @@ namespace ShowcaseExample
 
             vc1.SetPosition(new Point(0, 0));
         }
+
+        #endregion
+
+        #region Manual edge drawing
+
+        private bool _isInEDMode = false;
+        private PathGeometry _edGeo;
+        private VertexControl _edVertex;
+        private EdgeControl _edEdge;
+        private DataVertex _edFakeDV;
+
+        private void StartEdgeDragging(VertexControl vc)
+        {
+            if (_isInEDMode)
+                return;
+
+            _edVertex = vc;
+            Point startPoint = tg_zoomctrl.TranslatePoint(Mouse.GetPosition(tg_zoomctrl), tg_Area);
+            Point pos = new Point(startPoint.X + 2, startPoint.Y + 2);
+            _edFakeDV = new DataVertex() { ID = Guid.NewGuid() };
+            _edGeo = new PathGeometry(new PathFigureCollection() { 
+                                        new PathFigure() 
+                                        { 
+                                            IsClosed = false, 
+                                            StartPoint = startPoint, 
+                                            Segments = new PathSegmentCollection() { new PolyLineSegment(new List<Point>() { pos }, true) }
+                                        } });
+            var dedge = new DataEdge(_edVertex.Vertex as DataVertex, _edFakeDV);
+            _edEdge = new EdgeControl(_edVertex, null, dedge) { ManualDrawing = true };
+            tg_Area.AddEdge(dedge, _edEdge);
+            tg_Area.LogicCore.Graph.AddVertex(_edFakeDV);
+            tg_Area.LogicCore.Graph.AddEdge(dedge);
+            _edEdge.SetEdgePathManually(_edGeo);
+            _isInEDMode = true;
+        }
+
+        void tg_Area_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (_isInEDMode && _edGeo != null && _edEdge != null && _edVertex != null)
+            {
+                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
+                pos.X += 2;
+                pos.Y += 2;
+                var lastseg = _edGeo.Figures[0].Segments[_edGeo.Figures[0].Segments.Count - 1] as PolyLineSegment;
+                lastseg.Points[lastseg.Points.Count - 1] = pos;
+                _edEdge.SetEdgePathManually(_edGeo);
+            }
+        }
+
+        void tg_Area_VertexMouseMove(object sender, VertexMovedEventArgs e)
+        {
+            if (_isInEDMode && _edGeo != null && _edEdge != null && _edVertex != null
+                && _edVertex != e.VertexControl)
+            {
+                VertexControl vc = e.VertexControl;
+                var pos = vc.GetPosition();
+                if (vc.ActualWidth > 0)
+                {
+                    pos.X += vc.ActualWidth / 2;
+                    pos.Y += vc.ActualHeight / 2;
+                }
+                var lastseg = _edGeo.Figures[0].Segments[_edGeo.Figures[0].Segments.Count - 1] as PolyLineSegment;
+                lastseg.Points[lastseg.Points.Count - 1] = pos;
+                _edEdge.SetEdgePathManually(_edGeo);
+            }
+        }
+
+        void tg_zoomctrl_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (_isInEDMode && _edGeo != null && _edEdge != null && _edVertex != null && e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
+            {
+                //place point
+                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
+                pos.X += 2;
+                pos.Y += 2;
+                var lastseg = _edGeo.Figures[0].Segments[_edGeo.Figures[0].Segments.Count - 1] as PolyLineSegment;
+                lastseg.Points.Add(pos);
+                _edEdge.SetEdgePathManually(_edGeo);
+            }
+        }
+
+        void tg_Area_VertexSelected_ED(VertexControl vc)
+        {
+            if (_edVertex == vc)
+                return;
+
+            var data = new DataEdge(_edVertex.Vertex as DataVertex, vc.Vertex as DataVertex);
+            tg_Area.LogicCore.Graph.AddEdge(data);
+            var ec = new EdgeControl(_edVertex, vc, data) { DataContext = data };
+            tg_Area.InsertEdge(data, ec);
+
+            _isInEDMode = false;
+            clearEdgeDrawing();
+        }
+
+        void clearEdgeDrawing()
+        {
+            _edGeo = null;
+
+            if (_edFakeDV != null)
+                tg_Area.LogicCore.Graph.RemoveVertex(_edFakeDV);
+            _edFakeDV = null;
+
+            _edVertex = null;
+
+            DataEdge dedge = _edEdge.Edge as DataEdge;
+            if (dedge != null)
+            {
+                tg_Area.RemoveEdge(dedge);
+                tg_Area.LogicCore.Graph.RemoveEdge(dedge);
+            }
+            _edEdge = null;
+        }
+
+        #endregion
+
+        #region grouping related
+
+        private void StartVertexDragDrop(VertexControl vc)
+        {
+            DragDrop.DoDragDrop(vc, vc.Vertex, DragDropEffects.Link);
+        }
+
+        #endregion
+
+        #region useless
+
+        #region Commands
+
+        #region TGRelayoutCommand
+        private bool TGRelayoutCommandCanExecute(object sender)
+        {
+            return true; // tg_Area.Graph != null && tg_Area.VertexList.Count > 0;
+        }
+
+        private void TGRelayoutCommandExecute(object sender)
+        {
+            if (tg_Area.LogicCore.AsyncAlgorithmCompute)
+                tg_loader.Visibility = System.Windows.Visibility.Visible;
+
+            tg_Area.RelayoutGraph(true);
+            /*if (tg_edgeMode.SelectedIndex == 0 && tg_Area.EdgesList.Count == 0)
+                tg_Area.GenerateAllEdges();*/
+        }
+        #endregion
+
+        void TGRegisterCommands()
+        {
+            tg_but_relayout.Command = new SimpleCommand(TGRelayoutCommandCanExecute, TGRelayoutCommandExecute);
+        }
+        #endregion
+
+        void tg_Area_VertexSelected(object sender, VertexSelectedEventArgs args)
+        {
+            if (_isInEDMode)
+            {
+                tg_Area_VertexSelected_ED(args.VertexControl);
+                return;
+            }
+
+            if (args.MouseArgs.RightButton == MouseButtonState.Pressed)
+            {
+                args.VertexControl.ContextMenu = new System.Windows.Controls.ContextMenu();
+                var menuitem = new System.Windows.Controls.MenuItem() { Header = "Delete item", Tag = args.VertexControl };
+                menuitem.Click += tg_deleteitem_Click;
+                args.VertexControl.ContextMenu.Items.Add(menuitem);
+
+                var str = new StringBuilder();
+                using (var writer = new StringWriter(str))
+                    XamlWriter.Save(args.VertexControl.ContextMenu.Template, writer);
+                Debug.Write(str);
+            }
+        }
+
+        void tg_deleteitem_Click(object sender, RoutedEventArgs e)
+        {
+            var vc = (sender as System.Windows.Controls.MenuItem).Tag as VertexControl;
+            if (vc != null)
+            {
+                foreach (var item in tg_Area.GetRelatedControls(vc, GraphControlType.Edge, EdgesType.All))
+                {
+                    var ec = item as EdgeControl;
+                    tg_Area.LogicCore.Graph.RemoveEdge(ec.Edge as DataEdge);
+                    tg_Area.RemoveEdge(ec.Edge as DataEdge);
+                }
+                tg_Area.RemoveVertex(vc.Vertex as DataVertex);
+                tg_Area.LogicCore.Graph.RemoveVertex(vc.Vertex as DataVertex);
+            }
+        }
+
+        private void tg_but_randomgraph_Click(object sender, RoutedEventArgs e)
+        {
+            addVertex(Rand.Next(0, 200), Rand.Next(0, 200));
+        }
+
+        //void tg_Area_RelayoutFinished(object sender, EventArgs e)
+        //{
+        //    if (tg_Area.LogicCore.AsyncAlgorithmCompute)
+        //        tg_loader.Visibility = System.Windows.Visibility.Collapsed;
+
+        //    tg_zoomctrl.ZoomToFill();
+        //}
+
+        private void tg_highlightStrategy_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            foreach (var item in tg_Area.VertexList)
+                HighlightBehaviour.SetHighlightStrategy(item.Value, (HighlightStrategy)tg_highlightStrategy.SelectedItem);
+            foreach (var item in tg_Area.EdgesList)
+                HighlightBehaviour.SetHighlightStrategy(item.Value, (HighlightStrategy)tg_highlightStrategy.SelectedItem);
+        }
+
+        private void tg_highlightType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            foreach (var item in tg_Area.VertexList)
+                HighlightBehaviour.SetHighlightControl(item.Value, (GraphControlType)tg_highlightType.SelectedItem);
+            foreach (var item in tg_Area.EdgesList)
+                HighlightBehaviour.SetHighlightControl(item.Value, (GraphControlType)tg_highlightType.SelectedItem);
+        }
+
+        private void tg_highlightEnabled_Checked(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in tg_Area.VertexList)
+                HighlightBehaviour.SetIsHighlightEnabled(item.Value, (bool)tg_highlightEnabled.IsChecked);
+            foreach (var item in tg_Area.EdgesList)
+                HighlightBehaviour.SetIsHighlightEnabled(item.Value, (bool)tg_highlightEnabled.IsChecked);
+
+            tg_highlightStrategy.IsEnabled = tg_highlightType.IsEnabled = tg_highlightEdgeType.IsEnabled = (bool)tg_highlightEnabled.IsChecked;
+        }
+
+        private void tg_highlightEdgeType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            foreach (var item in tg_Area.VertexList)
+                HighlightBehaviour.SetHighlightEdges(item.Value, (EdgesType)tg_highlightEdgeType.SelectedItem);
+            foreach (var item in tg_Area.EdgesList)
+                HighlightBehaviour.SetHighlightEdges(item.Value, (EdgesType)tg_highlightEdgeType.SelectedItem);
+        }
+
+        #endregion
     }
 }
