@@ -10,12 +10,44 @@ using YAXLib;
 
 namespace ShowcaseExample
 {
-    public class DataVertex: VertexBase
+    public class DataVertex: VertexBase, INotifyPropertyChanged
     {
+        private string name = "";
+        private string profession = "";
+
         public DateTime DateTimeValue;
         public string Text { get; set; }
-        public string Name { get; set; }
-        public string Profession { get; set; }
+        public string Name 
+        { 
+            get
+            {
+                return this.name;
+
+            }
+            set
+            {
+                if (this.name!=value)
+                {
+                    this.name = value;
+                    OnPropertyChanged("Name");
+                }
+            }
+        }
+        public string Profession 
+        {
+            get
+            {
+                return this.profession;
+            }
+            set
+            {
+                if (this.profession!=value)
+                {
+                    this.profession = value;
+                    OnPropertyChanged("Profession");
+                }
+            }
+        }
         public string Gender { get; set; }
         public int Age { get; set; }
         public int layerLever { get; set; }
@@ -72,6 +104,16 @@ namespace ShowcaseExample
             if (string.IsNullOrEmpty(text)) Text = num == 0 ? text : textArray[num];
             else Text = text;
             DataImage = new BitmapImage(new Uri(imgArray[num], UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyChanged(String info)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(info));
+            }
         }
     }
 }

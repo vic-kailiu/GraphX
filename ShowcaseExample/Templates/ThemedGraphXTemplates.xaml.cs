@@ -25,6 +25,20 @@ namespace ShowcaseExample.Templates
                     MainWindow.MW().RouteCommand(vc, RoutedCommands.EdgeDrag);
                 else if (sender is Image)
                     MainWindow.MW().RouteCommand(vc, RoutedCommands.VertexDragDrop);
+                else if (sender is TextBlock)
+                {
+                    if (((MouseButtonEventArgs)e).ClickCount != 2)
+                        return;
+                    switch (((TextBlock)sender).Name)
+                    {
+                        case "Title":
+                            MainWindow.MW().RouteCommand(vc, RoutedCommands.ChangeTitle);
+                            break;
+                        case "Author":
+                            MainWindow.MW().RouteCommand(vc, RoutedCommands.ChangeAuthor);
+                            break;
+                    }
+                }
             }
             return;
         }

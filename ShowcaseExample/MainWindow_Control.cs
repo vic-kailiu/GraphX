@@ -17,13 +17,16 @@ using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
+using ShowcaseExample.Controls;
 
 namespace ShowcaseExample
 {
     public enum RoutedCommands
     {
         EdgeDrag,
-        VertexDragDrop
+        VertexDragDrop,
+        ChangeTitle,
+        ChangeAuthor,
     }
 
     public partial class MainWindow
@@ -47,6 +50,10 @@ namespace ShowcaseExample
                     return;
                 case RoutedCommands.VertexDragDrop:
                     StartVertexDragDrop(vc);
+                    return;
+                case RoutedCommands.ChangeTitle:
+                case RoutedCommands.ChangeAuthor:
+                    DoChangeText(vc, rc);
                     return;
             }
         }
@@ -116,59 +123,80 @@ namespace ShowcaseExample
         {
             tg_but_relayout.Command = new SimpleCommand(TGRelayoutCommandCanExecute, TGRelayoutCommandExecute);
         }
-        #endregion
-
-        void tg_Area_VertexSelected(object sender, VertexSelectedEventArgs args)
-        {
-            if (_isInEDMode)
-            {
-                if (_edVertex == args.VertexControl)
-                    return;
-
-                var data = new DataEdge(_edVertex.Vertex as DataVertex, args.VertexControl.Vertex as DataVertex);
-                tg_Area.LogicCore.Graph.AddEdge(data);
-                var ec = new EdgeControl(_edVertex, args.VertexControl, data) { DataContext = data };
-                tg_Area.InsertEdge(data, ec);
-
-                _isInEDMode = false;
-                clearEdgeDrawing();
-                return;
-            }
-
-            if (args.MouseArgs.RightButton == MouseButtonState.Pressed)
-            {
-                args.VertexControl.ContextMenu = new System.Windows.Controls.ContextMenu();
-                var menuitem = new System.Windows.Controls.MenuItem() { Header = "Delete item", Tag = args.VertexControl };
-                menuitem.Click += tg_deleteitem_Click;
-                args.VertexControl.ContextMenu.Items.Add(menuitem);
-
-                var str = new StringBuilder();
-                using (var writer = new StringWriter(str))
-                    XamlWriter.Save(args.VertexControl.ContextMenu.Template, writer);
-                Debug.Write(str);
-            }
-        }
-
-        void tg_deleteitem_Click(object sender, RoutedEventArgs e)
-        {
-            var vc = (sender as System.Windows.Controls.MenuItem).Tag as VertexControl;
-            if (vc != null)
-            {
-                foreach (var item in tg_Area.GetRelatedControls(vc, GraphControlType.Edge, EdgesType.All))
-                {
-                    var ec = item as EdgeControl;
-                    tg_Area.LogicCore.Graph.RemoveEdge(ec.Edge as DataEdge);
-                    tg_Area.RemoveEdge(ec.Edge as DataEdge);
-                }
-                tg_Area.RemoveVertex(vc.Vertex as DataVertex);
-                tg_Area.LogicCore.Graph.RemoveVertex(vc.Vertex as DataVertex);
-            }
-        }
-
+        
         private void tg_but_randomgraph_Click(object sender, RoutedEventArgs e)
         {
             addVertex(Rand.Next(0, 200), Rand.Next(0, 200));
         }
+        
+        #endregion
+
+        #region AddVertex
+
+        private void tg_zoomctrl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
+                addVertex(pos.X, pos.Y);
+            }
+        }
+
+        private void addVertex(double x, double y)
+        {
+            var data = new DataVertex("Vertex " + tg_Area.VertexList.Count() + 1);
+
+            data.Age = Rand.Next(18, 75);
+            data.Gender = ThemedDataStorage.Gender[Rand.Next(0, 2)];
+            if (data.Gender == ThemedDataStorage.Gender[0])
+                data.PersonImage = new BitmapImage(new Uri(@"pack://application:,,,/ShowcaseExample;component/Images/female.png", UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
+            else data.PersonImage = new BitmapImage(new Uri(@"pack://application:,,,/ShowcaseExample;component/Images/male.png", UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
+            data.Profession = ThemedDataStorage.Professions[Rand.Next(0, ThemedDataStorage.Professions.Count - 1)];
+            data.Name = ThemedDataStorage.Names[Rand.Next(0, ThemedDataStorage.Names.Count - 1)];
+
+            tg_Area.LogicCore.Graph.AddVertex(data);
+
+            VertexControl vc = new VertexControl(data);
+            DragBehaviour.SetIsDragEnabled(vc, true);
+            DragBehaviour.SetUpdateEdgesOnMove(vc, true);
+            tg_Area.AddVertex(data, vc);
+
+            vc.SetPosition(new Point(x, y));
+            if (tg_Area.VertexList.Count == 1)
+            {
+                //tg_zoomctrl.ZoomToFill();
+                Button button = tg_zoomctrl.ViewFinder.FindName("FillButton") as Button;
+                if (button != null)
+                {
+                    ButtonAutomationPeer peer = new ButtonAutomationPeer(button);
+                    IInvokeProvider invokeProv = (IInvokeProvider)peer.GetPattern(PatternInterface.Invoke);
+                    invokeProv.Invoke();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Vertex Content Related
+
+        private void DoChangeText(VertexControl vc, RoutedCommands rc)
+        {
+            InputDialogWindow inputDialog = new InputDialogWindow("Please enter your name:", "John Doe");
+            if (inputDialog.ShowDialog() == true)
+            {
+                switch (rc)
+                {
+                    case RoutedCommands.ChangeTitle:
+                        ((DataVertex)vc.DataContext).Name = inputDialog.Answer;
+                        break;
+                    case RoutedCommands.ChangeAuthor:
+                        ((DataVertex)vc.DataContext).Profession = inputDialog.Answer;
+                        break;
+                }
+            }
+        }
+                
+        #endregion
 
         #region Manual edge drawing
 
@@ -248,6 +276,20 @@ namespace ShowcaseExample
             }
         }
 
+        void tg_Area_VertexSelected_ED(VertexControl vc)
+        {
+            if (_edVertex == vc)
+                return;
+
+            var data = new DataEdge(_edVertex.Vertex as DataVertex, vc.Vertex as DataVertex);
+            tg_Area.LogicCore.Graph.AddEdge(data);
+            var ec = new EdgeControl(_edVertex, vc, data) { DataContext = data };
+            tg_Area.InsertEdge(data, ec);
+
+            _isInEDMode = false;
+            clearEdgeDrawing();
+        }
+
         void clearEdgeDrawing()
         {
             _edGeo = null;
@@ -269,9 +311,58 @@ namespace ShowcaseExample
 
         #endregion
 
+        #region DragDrop
+
         private void StartVertexDragDrop(VertexControl vc)
         {
             DragDrop.DoDragDrop(vc, vc.Vertex, DragDropEffects.Link);
+        }
+
+        #endregion
+
+        #region Template Remaining
+
+        void tg_Area_VertexSelected(object sender, VertexSelectedEventArgs args)
+        {
+            if (_isInEDMode)
+            {
+                tg_Area_VertexSelected_ED(args.VertexControl);
+                return;
+            }
+
+            if (args.MouseArgs.RightButton == MouseButtonState.Pressed)
+            {
+                tg_Area_VertexSelected_RighClick(args.VertexControl);
+            }
+        }
+
+        void tg_Area_VertexSelected_RighClick(VertexControl vc)
+        {
+            vc.ContextMenu = new System.Windows.Controls.ContextMenu();
+            var menuitem = new System.Windows.Controls.MenuItem() { Header = "Delete item", Tag = vc };
+            menuitem.Click += tg_deleteitem_Click;
+            vc.ContextMenu.Items.Add(menuitem);
+
+            var str = new StringBuilder();
+            using (var writer = new StringWriter(str))
+                XamlWriter.Save(vc.ContextMenu.Template, writer);
+            Debug.Write(str);
+        }
+
+        void tg_deleteitem_Click(object sender, RoutedEventArgs e)
+        {
+            var vc = (sender as System.Windows.Controls.MenuItem).Tag as VertexControl;
+            if (vc != null)
+            {
+                foreach (var item in tg_Area.GetRelatedControls(vc, GraphControlType.Edge, EdgesType.All))
+                {
+                    var ec = item as EdgeControl;
+                    tg_Area.LogicCore.Graph.RemoveEdge(ec.Edge as DataEdge);
+                    tg_Area.RemoveEdge(ec.Edge as DataEdge);
+                }
+                tg_Area.RemoveVertex(vc.Vertex as DataVertex);
+                tg_Area.LogicCore.Graph.RemoveVertex(vc.Vertex as DataVertex);
+            }
         }
 
         void tg_Area_RelayoutFinished(object sender, EventArgs e)
@@ -316,46 +407,6 @@ namespace ShowcaseExample
                 HighlightBehaviour.SetHighlightEdges(item.Value, (EdgesType)tg_highlightEdgeType.SelectedItem);
         }
 
-        private void tg_zoomctrl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
-                addVertex(pos.X, pos.Y);
-            }
-        }
-
-        private void addVertex(double x, double y)
-        {
-            var data = new DataVertex("Vertex " + tg_Area.VertexList.Count() + 1);
-
-            data.Age = Rand.Next(18, 75);
-            data.Gender = ThemedDataStorage.Gender[Rand.Next(0, 2)];
-            if (data.Gender == ThemedDataStorage.Gender[0])
-                data.PersonImage = new BitmapImage(new Uri(@"pack://application:,,,/ShowcaseExample;component/Images/female.png", UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
-            else data.PersonImage = new BitmapImage(new Uri(@"pack://application:,,,/ShowcaseExample;component/Images/male.png", UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
-            data.Profession = ThemedDataStorage.Professions[Rand.Next(0, ThemedDataStorage.Professions.Count - 1)];
-            data.Name = ThemedDataStorage.Names[Rand.Next(0, ThemedDataStorage.Names.Count - 1)];
-
-            tg_Area.LogicCore.Graph.AddVertex(data);
-
-            VertexControl vc = new VertexControl(data);
-            DragBehaviour.SetIsDragEnabled(vc, true);
-            DragBehaviour.SetUpdateEdgesOnMove(vc, true);
-            tg_Area.AddVertex(data, vc);
-
-            vc.SetPosition(new Point(x, y));
-            if (tg_Area.VertexList.Count == 1)
-            {
-                //tg_zoomctrl.ZoomToFill();
-                Button button = tg_zoomctrl.ViewFinder.FindName("FillButton") as Button;
-                if (button != null)
-                {
-                    ButtonAutomationPeer peer = new ButtonAutomationPeer(button);
-                    IInvokeProvider invokeProv = (IInvokeProvider)peer.GetPattern(PatternInterface.Invoke);
-                    invokeProv.Invoke();
-                }
-            }
-        }
+        #endregion
     }
 }
