@@ -18,6 +18,7 @@ namespace ShowcaseExample
         public string Profession { get; set; }
         public string Gender { get; set; }
         public int Age { get; set; }
+        public int layerLever { get; set; }
 
         [YAXDontSerialize]
         public ImageSource DataImage { get; set; }

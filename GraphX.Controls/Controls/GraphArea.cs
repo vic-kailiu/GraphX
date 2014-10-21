@@ -319,6 +319,16 @@ namespace GraphX
             base.Children.Add(vertexControl);
         }
 
+        protected void InternalAddVertex(TVertex vertexData, VertexControl vertexControl, int i)
+        {
+            if (vertexControl == null || vertexData == null) return;
+            vertexControl.RootArea = this;
+            if (_vertexlist.ContainsKey(vertexData)) throw new GX_InvalidDataException("AddVertex() -> Vertex with the same data has already been added to layout!");
+            _vertexlist.Add(vertexData, vertexControl);
+            //base.Children.Add(vertexControl);
+            base.Children.Insert(i, vertexControl);
+        }
+
         /// <summary>
         /// Add an edge to layout. Edge is added into the end of the visual tree causing it to be rendered above all vertices.
         /// </summary>
@@ -338,6 +348,16 @@ namespace GraphX
             edgeControl.RootArea = this;
             _edgeslist.Add(edgeData, edgeControl);
             base.Children.Add(edgeControl);
+        }
+
+        protected void InternalAddEdge(TEdge edgeData, EdgeControl edgeControl, int i)
+        {
+            if (edgeControl == null || edgeData == null) return;
+            if (_edgeslist.ContainsKey(edgeData)) throw new GX_InvalidDataException("AddEdge() -> An edge with the same data has already been added to layout!");
+            edgeControl.RootArea = this;
+            _edgeslist.Add(edgeData, edgeControl);
+            //base.Children.Add(edgeControl);
+            base.Children.Insert(i, edgeControl);
         }
 
         /// <summary>
@@ -760,7 +780,7 @@ namespace GraphX
                 ReapplySingleVertexVisualProperties(item);
         }
 
-        private void ReapplySingleVertexVisualProperties(VertexControl item)
+        protected void ReapplySingleVertexVisualProperties(VertexControl item)
         {
             if (_svVerticesDragEnabled != null) DragBehaviour.SetIsDragEnabled(item, _svVerticesDragEnabled.Value);
             if (_svVerticesDragUpdateEdges != null) DragBehaviour.SetUpdateEdgesOnMove(item, _svVerticesDragUpdateEdges.Value);
@@ -776,7 +796,7 @@ namespace GraphX
                 ReapplySingleEdgeVisualProperties(item);
         }
 
-        private void ReapplySingleEdgeVisualProperties(EdgeControl item)
+        protected void ReapplySingleEdgeVisualProperties(EdgeControl item)
         {
             if (_svEdgeDashStyle != null) item.DashStyle = _svEdgeDashStyle.Value;
             if (_svShowEdgeArrows != null) item.ShowArrows = _svShowEdgeArrows.Value;
