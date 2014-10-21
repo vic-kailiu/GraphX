@@ -27,6 +27,8 @@ namespace ShowcaseExample
         VertexDragDrop,
         ChangeTitle,
         ChangeAuthor,
+        MergeVertex,
+        IncludeVertex,
     }
 
     public partial class MainWindow
@@ -39,8 +41,15 @@ namespace ShowcaseExample
             return mw;
         }
 
-        public void RouteCommand(VertexControl vc, RoutedCommands rc)
+        public void RouteCommand(VertexControl vc, RoutedCommands rc, Object parameter)
         {
+            VertexControl paraVC = null;
+
+            if (parameter!=null)    // parse parameter to GUID, then find the vc
+            {
+                paraVC = tg_Area.GetVertexControl((string)parameter);
+            }
+
             switch (rc)
             {
                 case RoutedCommands.EdgeDrag:
@@ -54,6 +63,12 @@ namespace ShowcaseExample
                 case RoutedCommands.ChangeTitle:
                 case RoutedCommands.ChangeAuthor:
                     DoChangeText(vc, rc);
+                    return;
+                case RoutedCommands.MergeVertex:
+                    DoMergeVertex(vc, paraVC);
+                    return;
+                case RoutedCommands.IncludeVertex:
+                    DoIncludeVertex(vc, paraVC);
                     return;
             }
         }
@@ -154,12 +169,14 @@ namespace ShowcaseExample
             data.Profession = ThemedDataStorage.Professions[Rand.Next(0, ThemedDataStorage.Professions.Count - 1)];
             data.Name = ThemedDataStorage.Names[Rand.Next(0, ThemedDataStorage.Names.Count - 1)];
 
+            data.layerLever = 0;
+
             tg_Area.LogicCore.Graph.AddVertex(data);
 
             VertexControl vc = new VertexControl(data);
             DragBehaviour.SetIsDragEnabled(vc, true);
             DragBehaviour.SetUpdateEdgesOnMove(vc, true);
-            tg_Area.AddVertex(data, vc);
+            tg_Area.AddVertex(data, vc, null);
 
             vc.SetPosition(new Point(x, y));
             if (tg_Area.VertexList.Count == 1)
@@ -315,8 +332,19 @@ namespace ShowcaseExample
 
         private void StartVertexDragDrop(VertexControl vc)
         {
-            DragDrop.DoDragDrop(vc, vc.Vertex, DragDropEffects.Link);
+            DragDrop.DoDragDrop(vc, ((DataVertex)vc.Vertex).ID.ToString(), DragDropEffects.Link);
         }
+
+        private void DoMergeVertex(VertexControl vc, VertexControl paraVC)
+        {
+            //throw new NotImplementedException();
+        }
+
+        private void DoIncludeVertex(VertexControl vc, VertexControl paraVC)
+        {
+            //throw new NotImplementedException();
+        }
+
 
         #endregion
 

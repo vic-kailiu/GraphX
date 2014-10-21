@@ -149,7 +149,7 @@
                         </Storyboard>
                     </ControlTemplate.Resources>
 
-                    <Grid>
+                    <Grid AllowDrop="True" Drop="NotifyMainWindow">
                         <Border x:Name="BackgroundNorm"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
@@ -222,7 +222,8 @@
                                     Width="300"
                                     Height="80"
                                     AllowDrop="True"
-                                    Background="Aqua" />
+                                    Background="Aqua"
+                                    Drop="NotifyMainWindow"/>
                             <Button x:Name="EdgeGrip"
                                     Grid.Row="2"
                                     Grid.Column="3"

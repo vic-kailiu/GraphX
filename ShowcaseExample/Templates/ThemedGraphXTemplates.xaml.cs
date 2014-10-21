@@ -22,9 +22,9 @@ namespace ShowcaseExample.Templates
             if (vc!=null)
             {
                 if (sender is Button)
-                    MainWindow.MW().RouteCommand(vc, RoutedCommands.EdgeDrag);
+                    MainWindow.MW().RouteCommand(vc, RoutedCommands.EdgeDrag, null);
                 else if (sender is Image)
-                    MainWindow.MW().RouteCommand(vc, RoutedCommands.VertexDragDrop);
+                    MainWindow.MW().RouteCommand(vc, RoutedCommands.VertexDragDrop, null);
                 else if (sender is TextBlock)
                 {
                     if (((MouseButtonEventArgs)e).ClickCount != 2)
@@ -32,12 +32,22 @@ namespace ShowcaseExample.Templates
                     switch (((TextBlock)sender).Name)
                     {
                         case "Title":
-                            MainWindow.MW().RouteCommand(vc, RoutedCommands.ChangeTitle);
+                            MainWindow.MW().RouteCommand(vc, RoutedCommands.ChangeTitle, null);
                             break;
                         case "Author":
-                            MainWindow.MW().RouteCommand(vc, RoutedCommands.ChangeAuthor);
+                            MainWindow.MW().RouteCommand(vc, RoutedCommands.ChangeAuthor, null);
                             break;
                     }
+                }
+                else if (sender is Grid)        //merge vertex
+                {
+                    MainWindow.MW().RouteCommand(vc, RoutedCommands.MergeVertex,
+                                                    ((DragEventArgs)e).Data.GetData(DataFormats.StringFormat));
+                }
+                else if (sender is Border)
+                {
+                    MainWindow.MW().RouteCommand(vc, RoutedCommands.IncludeVertex,
+                                                    ((DragEventArgs)e).Data.GetData(DataFormats.StringFormat));
                 }
             }
             return;

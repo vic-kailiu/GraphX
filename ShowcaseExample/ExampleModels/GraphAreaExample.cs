@@ -47,11 +47,11 @@ namespace ShowcaseExample
                                  + nestedvisualLayers[i].edgeLayer; 
                 }
                 visualLayer += nestedvisualLayers[layer].edgeLayer; // visual layer is above the edge layer
-            }
 
-            InternalAddVertex(vertexData, vertexControl, visualLayer);
-            if (EnableVisualPropsApply && vertexControl != null)
-                ReapplySingleVertexVisualProperties(vertexControl);
+                InternalAddVertex(vertexData, vertexControl, visualLayer);
+                if (EnableVisualPropsApply && vertexControl != null)
+                    ReapplySingleVertexVisualProperties(vertexControl);
+            }            
         }
 
         public void AddEdge(DataEdge edgeData, EdgeControl edgeControl, int i)
@@ -59,6 +59,24 @@ namespace ShowcaseExample
             InternalAddEdge(edgeData, edgeControl, i);
             if (EnableVisualPropsApply && edgeControl != null)
                 ReapplySingleEdgeVisualProperties(edgeControl);
+        }
+    
+        public VertexControl GetVertexControl(string id)
+        {
+            Guid guid = new Guid(id);
+            if (guid == Guid.Empty)
+                throw new Exception("Invalid GUID");
+
+            List<DataVertex> dvList = base.VertexList.Keys.ToList();
+            var dv = dvList.First(o => o.ID == guid);
+            if (dv != null)
+            {
+                return base.VertexList[dv] as VertexControl;
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }
