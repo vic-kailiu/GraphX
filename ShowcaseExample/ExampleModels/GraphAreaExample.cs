@@ -33,14 +33,16 @@ namespace ShowcaseExample
             else
             {
                 // find corresonding layer
-                int layer = nestedvisualLayers.Count - childVertex.layerLever + 1;
+                int layer = nestedvisualLayers.Count - childVertex.layerLever - 1;
                 // count layer below and edge layer ==> visualLayer
                 if (layer == -1)
                 {
                     Layer newLayer = new Layer();
-                    nestedvisualLayers.Insert(0, newLayer);
+                    layer = 0;
+                    nestedvisualLayers.Insert(layer, newLayer);
                 }
-                
+
+                visualLayer = 0;
                 for (int i = 0; i<layer; i++)
                 {
                     visualLayer += nestedvisualLayers[i].vertexlayer 

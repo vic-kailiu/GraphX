@@ -18,6 +18,7 @@ using System.Windows.Controls;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
 using ShowcaseExample.Controls;
+using ShowcaseExample.Utils;
 
 namespace ShowcaseExample
 {
@@ -125,10 +126,11 @@ namespace ShowcaseExample
 
         private void TGRelayoutCommandExecute(object sender)
         {
-            if (tg_Area.LogicCore.AsyncAlgorithmCompute)
-                tg_loader.Visibility = System.Windows.Visibility.Visible;
 
-            tg_Area.RelayoutGraph(true);
+            //if (tg_Area.LogicCore.AsyncAlgorithmCompute)
+            //    tg_loader.Visibility = System.Windows.Visibility.Visible;
+
+            //tg_Area.RelayoutGraph(true);
             /*if (tg_edgeMode.SelectedIndex == 0 && tg_Area.EdgesList.Count == 0)
                 tg_Area.GenerateAllEdges();*/
         }
@@ -337,12 +339,48 @@ namespace ShowcaseExample
 
         private void DoMergeVertex(VertexControl vc, VertexControl paraVC)
         {
-            //throw new NotImplementedException();
+            // place paraVC to the mouse position
+            Point mousePosition;
+            //mousePosition = tg_zoomctrl.TranslatePoint(Mouse.GetPosition(tg_zoomctrl), tg_Area);
+            // the Mouse.GetPosition won't work correctly, since mouse is captured at that time
+            // http://tech.pro/tutorial/893/wpf-snippet-reliably-getting-the-mouse-position
+            mousePosition = MouseUtilities.CorrectGetPosition(tg_Area);
+            paraVC.SetPosition(mousePosition);
+
+            //create folder node
+            // assume vc and paraVC at same layer
+            //TODO: well defined logic to handle situations that vc and paraVC at different layer
+            int vertexLayer = ((DataVertex)(vc.DataContext)).layerLever; 
+            var data = new DataVertex("FolderVertex " + tg_Area.VertexList.Count() + 1);
+
+            data.Age = Rand.Next(18, 75);
+            data.Gender = ThemedDataStorage.Gender[Rand.Next(0, 2)];
+            if (data.Gender == ThemedDataStorage.Gender[0])
+                data.PersonImage = new BitmapImage(new Uri(@"pack://application:,,,/ShowcaseExample;component/Images/female.png", UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
+            else data.PersonImage = new BitmapImage(new Uri(@"pack://application:,,,/ShowcaseExample;component/Images/male.png", UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
+            data.Profession = ThemedDataStorage.Professions[Rand.Next(0, ThemedDataStorage.Professions.Count - 1)];
+            data.Name = "BIG Boss";
+
+            data.layerLever = vertexLayer;
+
+            tg_Area.LogicCore.Graph.AddVertex(data);
+
+            VertexControl fvc = new VertexControl(data);
+            DragBehaviour.SetIsDragEnabled(fvc, true);
+            DragBehaviour.SetUpdateEdgesOnMove(fvc, true);
+            tg_Area.AddVertex(data, fvc, (DataVertex)(vc.DataContext));
+
+            fvc.SetPosition(new Point(vc.GetPosition().X - 20, vc.GetPosition().Y - 20));
         }
 
         private void DoIncludeVertex(VertexControl vc, VertexControl paraVC)
         {
             //throw new NotImplementedException();
+        }
+
+        private void CreateFolderVertex()
+        {
+
         }
 
 
