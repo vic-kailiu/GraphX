@@ -22,6 +22,15 @@ namespace GraphX
         /// </summary>
         public VertexEventOptions EventOptions { get; private set; }
 
+        private Point _prePt;
+        public Point PreviousPos
+        {
+            get
+            {
+                return _prePt;
+            }
+        }
+
         private double _labelAngle;
         /// <summary>
         /// Gets or sets vertex label angle
@@ -145,6 +154,7 @@ namespace GraphX
 	    /// <param name="alsoFinal"></param>
 	    public void SetPosition(Point pt, bool alsoFinal = true)
         {
+            _prePt = pt;
             GraphAreaBase.SetX(this, pt.X, alsoFinal);
             GraphAreaBase.SetY(this, pt.Y, alsoFinal);
         }

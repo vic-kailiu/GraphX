@@ -116,6 +116,7 @@ namespace ShowcaseExample
             TGRegisterCommands();
         }
 
+
         #region Commands
 
         #region TGRelayoutCommand
@@ -192,6 +193,8 @@ namespace ShowcaseExample
                     invokeProv.Invoke();
                 }
             }
+
+            vc.PositionChanged += vc_PositionChanged;
         }
 
         #endregion
@@ -330,6 +333,8 @@ namespace ShowcaseExample
 
         #endregion
 
+        #region multilayer vertex
+
         #region DragDrop
 
         private void StartVertexDragDrop(VertexControl vc)
@@ -365,6 +370,9 @@ namespace ShowcaseExample
             data.ChildVertex.Add((DataVertex)vc.Vertex);
             data.ChildVertex.Add((DataVertex)paraVC.Vertex);
 
+            ((DataVertex)vc.Vertex).ParentVertex = data;
+            ((DataVertex)paraVC.Vertex).ParentVertex = data;
+
             tg_Area.LogicCore.Graph.AddVertex(data);
 
             VertexControl fvc = new VertexControl(data);
@@ -374,6 +382,9 @@ namespace ShowcaseExample
 
             data.ContentVisible = true;
             updateVertexLayout(data);
+
+            fvc.PositionChanged += vc_PositionChanged;
+
         }
 
         private void DoIncludeVertex(VertexControl vc, VertexControl paraVC)
@@ -386,20 +397,103 @@ namespace ShowcaseExample
             if (dv.ChildVertex.Count == 0)
                 return;
 
-            Rect contentRect = new Rect();
-            foreach (DataVertex child in dv.ChildVertex)
+            Rect contentRect = GetContentRect(dv.ChildVertex);
+
+            VertexControl vertex = tg_Area.VertexList[dv];
+            vertex.SetPosition(new Point(contentRect.X - VisualConfig.ContentMargin, contentRect.Y - (VisualConfig.ContentVPos + VisualConfig.ContentMargin)));
+            dv.ContentWidth = contentRect.Width + 2 * VisualConfig.ContentMargin;
+            dv.ContentHeight = contentRect.Height + 2 * VisualConfig.ContentMargin;
+        }
+
+        private Rect GetContentRect(List<DataVertex> dvlist)
+        {
+            VertexControl vc0 = tg_Area.VertexList[dvlist[0]];
+            Rect contentRect = new Rect(vc0.GetPosition().X, vc0.GetPosition().Y,
+                                        vc0.ActualWidth, vc0.ActualHeight);
+            foreach (DataVertex child in dvlist)
             {
                 VertexControl vc = tg_Area.VertexList[child];
                 contentRect.Union(new Rect(vc.GetPosition().X, vc.GetPosition().Y,
                                            vc.ActualWidth, vc.ActualHeight));
             }
-
-            VertexControl vertex = tg_Area.VertexList[dv];
-            vertex.SetPosition(new Point(contentRect.X - 10, contentRect.Y - 80));
-            dv.ContentWidth = contentRect.Width + 20;
-            dv.ContentHeight = contentRect.Height + 20;
+            return contentRect;
         }
 
+        #endregion
+
+        private void tg_Area_VertexSelected_LeftClick(VertexControl vertexControl)
+        {
+            DataVertex dv = vertexControl.Vertex as DataVertex;
+            if (dv.ChildVertex.Count == 0)
+                return;
+
+            HighlightBehaviour.SetHighlighted(vertexControl, true);
+            DragBehaviour.SetIsTagged(vertexControl, true);
+            
+            foreach (DataVertex child in dv.ChildVertex)
+            {
+                tg_Area.VertexList[child].PositionChanged -= vc_PositionChanged;
+                HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], true);
+                DragBehaviour.SetIsTagged(tg_Area.VertexList[child], true);
+            }
+
+            vertexControl.PreviewMouseUp += vertexControl_MouseUp;
+        }
+
+        private void vertexControl_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            DataVertex dv = ((VertexControl)sender).Vertex as DataVertex;
+            if (dv.ChildVertex.Count == 0)
+                return;
+
+            HighlightBehaviour.SetHighlighted((VertexControl)sender, false);
+            DragBehaviour.SetIsTagged((VertexControl)sender, false);
+
+            foreach (DataVertex child in dv.ChildVertex)
+            {
+                tg_Area.VertexList[child].PositionChanged += vc_PositionChanged;
+                HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], false);
+                DragBehaviour.SetIsTagged(tg_Area.VertexList[child], false);
+            }
+
+            ((VertexControl)sender).MouseUp -= vertexControl_MouseUp;
+        }
+
+        void vc_PositionChanged(object sender, VertexPositionEventArgs args)
+        {
+            DataVertex dv= ((VertexControl)sender).Vertex as DataVertex;
+            // update parent
+            if (dv.ParentVertex !=null )
+            {
+                VertexControl parentVC = tg_Area.VertexList[dv.ParentVertex];
+                parentVC.PositionChanged -= vc_PositionChanged;
+                updateVertexLayout(dv.ParentVertex);
+                parentVC.PositionChanged += vc_PositionChanged;
+            }
+
+            //// update children
+            //if (dv.ChildVertex.Count > 0)
+            //{
+            //    VertexControl fvc = tg_Area.VertexList[dv];
+            //    Point dvPos = fvc.GetPosition();
+            //    Point dvPrePos = fvc.PreviousPos;
+                
+            //    double deltaX = dvPos.X - dvPrePos.X;
+            //    double deltaY = dvPos.Y - dvPrePos.Y;
+
+            //    if ((deltaX == 0) && (deltaY == 0))
+            //        return;
+
+            //    foreach (DataVertex child in dv.ChildVertex)
+            //    {
+            //        VertexControl vc = tg_Area.VertexList[child];
+            //        vc.PositionChanged -= vc_PositionChanged;
+            //        Point vcpos = vc.GetPosition();
+            //        vc.SetPosition(new Point(vcpos.X + deltaX, vcpos.Y + deltaY));
+            //        vc.PositionChanged += vc_PositionChanged;
+            //    }
+            //}
+        }
 
         #endregion
 
@@ -411,6 +505,11 @@ namespace ShowcaseExample
             {
                 tg_Area_VertexSelected_ED(args.VertexControl);
                 return;
+            }
+
+            if (args.MouseArgs.LeftButton == MouseButtonState.Pressed)
+            {
+                tg_Area_VertexSelected_LeftClick(args.VertexControl);
             }
 
             if (args.MouseArgs.RightButton == MouseButtonState.Pressed)

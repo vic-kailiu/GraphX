@@ -172,6 +172,11 @@ namespace ShowcaseExample
         public DataVertex ParentVertex
         {
             get { return this.parentVertex; }
+            set
+            {
+                if (this.parentVertex != value)
+                    this.parentVertex = value;
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

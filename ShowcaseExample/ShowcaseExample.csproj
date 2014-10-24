@@ -119,6 +119,7 @@
     </Compile>
     <Compile Include="Utils\MouseUtilities.cs" />
     <Compile Include="Utils\UIHelper.cs" />
+    <Compile Include="Utils\VisualConfig.cs" />
     <Page Include="Controls\InputDialogWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
