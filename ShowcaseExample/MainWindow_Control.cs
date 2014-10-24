@@ -454,18 +454,23 @@ namespace ShowcaseExample
 
         #endregion
 
+        private bool IsFolderDragged = false;
+        private DataVertex CurrentlyUpdatingVertex = null;
+
         private void tg_Area_VertexSelected_LeftClick(VertexControl vertexControl)
         {
             DataVertex dv = vertexControl.Vertex as DataVertex;
             if (dv.ChildVertex.Count == 0)
                 return;
 
+            IsFolderDragged = true;
+
             //HighlightBehaviour.SetHighlighted(vertexControl, true);
             DragBehaviour.SetIsTagged(vertexControl, true);
-            
+
             foreach (DataVertex child in dv.ChildVertex)
             {
-                tg_Area.VertexList[child].PositionChanged -= vc_PositionChanged;
+                //tg_Area.VertexList[child].PositionChanged -= vc_PositionChanged;
                 //HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], true);
                 DragBehaviour.SetIsTagged(tg_Area.VertexList[child], true);
             }
@@ -479,12 +484,14 @@ namespace ShowcaseExample
             if (dv.ChildVertex.Count == 0)
                 return;
 
+            IsFolderDragged = false;
+
             //HighlightBehaviour.SetHighlighted((VertexControl)sender, false);
             DragBehaviour.SetIsTagged((VertexControl)sender, false);
 
             foreach (DataVertex child in dv.ChildVertex)
             {
-                tg_Area.VertexList[child].PositionChanged += vc_PositionChanged;
+                //tg_Area.VertexList[child].PositionChanged += vc_PositionChanged;
                 //HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], false);
                 DragBehaviour.SetIsTagged(tg_Area.VertexList[child], false);
             }
@@ -494,14 +501,20 @@ namespace ShowcaseExample
 
         void vc_PositionChanged(object sender, VertexPositionEventArgs args)
         {
+            if (IsFolderDragged) return;
+
             DataVertex dv= ((VertexControl)sender).Vertex as DataVertex;
+
+            if (CurrentlyUpdatingVertex == dv)
+                return;
+
             // update parent
             if (dv.ParentVertex !=null )
             {
                 VertexControl parentVC = tg_Area.VertexList[dv.ParentVertex];
-                parentVC.PositionChanged -= vc_PositionChanged;
+                CurrentlyUpdatingVertex = dv.ParentVertex;
                 updateVertexLayout(dv.ParentVertex);
-                parentVC.PositionChanged += vc_PositionChanged;
+                CurrentlyUpdatingVertex = null;
             }
 
             //// update children
@@ -543,15 +556,8 @@ namespace ShowcaseExample
             if (args.MouseArgs.LeftButton == MouseButtonState.Pressed)
             {
                 if (Keyboard.IsKeyDown(Key.LeftCtrl))
-                {
-                    //if (DragBehaviour.GetIsDragging(args.VertexControl)) return;
-
                     SelectVertex(args.VertexControl);
-                }
-            }
-
-            if (args.MouseArgs.LeftButton == MouseButtonState.Pressed)
-            {
+                else
                 tg_Area_VertexSelected_LeftClick(args.VertexControl);
             }
 
