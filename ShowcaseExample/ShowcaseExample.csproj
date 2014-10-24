@@ -118,6 +118,7 @@
       <DependentUpon>ThemedGraphXTemplates.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\MouseUtilities.cs" />
+    <Compile Include="Utils\UIHelper.cs" />
     <Page Include="Controls\InputDialogWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Xml.Serialization;
@@ -14,6 +15,9 @@ namespace ShowcaseExample
     {
         private string name = "";
         private string profession = "";
+        private double contentWidth = 300;
+        private double contentHeight = 100;
+        private bool contentVisible = false;
 
         public DateTime DateTimeValue;
         public string Text { get; set; }
@@ -51,6 +55,57 @@ namespace ShowcaseExample
         public string Gender { get; set; }
         public int Age { get; set; }
         public int layerLever { get; set; }
+
+        [YAXDontSerialize]
+        public double ContentWidth
+        {
+            get
+            {
+                return this.contentWidth;
+            }
+            set
+            {
+                if (this.contentWidth != value)
+                {
+                    this.contentWidth = value;
+                    OnPropertyChanged("ContentWidth");
+                }
+            }
+        }
+
+        [YAXDontSerialize]
+        public double ContentHeight
+        {
+            get
+            {
+                return this.contentHeight;
+            }
+            set
+            {
+                if (this.contentHeight != value)
+                {
+                    this.contentHeight = value;
+                    OnPropertyChanged("ContentHeight");
+                }
+            }
+        }
+
+        [YAXDontSerialize]
+        public bool ContentVisible
+        {
+            get
+            { 
+                return this.contentVisible;
+            }
+            set
+            {
+                if (this.contentVisible != value)
+                {
+                    this.contentVisible = value;
+                    OnPropertyChanged("ContentVisible");
+                }
+            }
+        }
 
         [YAXDontSerialize]
         public ImageSource DataImage { get; set; }
@@ -104,6 +159,19 @@ namespace ShowcaseExample
             if (string.IsNullOrEmpty(text)) Text = num == 0 ? text : textArray[num];
             else Text = text;
             DataImage = new BitmapImage(new Uri(imgArray[num], UriKind.Absolute)) { CacheOption = BitmapCacheOption.OnLoad };
+        }
+
+        private List<DataVertex> childVertex = new List<DataVertex>();
+        private DataVertex parentVertex;
+
+        public List<DataVertex> ChildVertex
+        {
+            get { return this.childVertex; }
+        }
+
+        public DataVertex ParentVertex
+        {
+            get { return this.parentVertex; }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

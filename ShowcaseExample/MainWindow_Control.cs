@@ -126,7 +126,7 @@ namespace ShowcaseExample
 
         private void TGRelayoutCommandExecute(object sender)
         {
-
+            //tg_Area.VertexList.Keys.First().ContentVisibility = System.Windows.Visibility.Visible;
             //if (tg_Area.LogicCore.AsyncAlgorithmCompute)
             //    tg_loader.Visibility = System.Windows.Visibility.Visible;
 
@@ -362,6 +362,8 @@ namespace ShowcaseExample
             data.Name = "BIG Boss";
 
             data.layerLever = vertexLayer;
+            data.ChildVertex.Add((DataVertex)vc.Vertex);
+            data.ChildVertex.Add((DataVertex)paraVC.Vertex);
 
             tg_Area.LogicCore.Graph.AddVertex(data);
 
@@ -370,7 +372,8 @@ namespace ShowcaseExample
             DragBehaviour.SetUpdateEdgesOnMove(fvc, true);
             tg_Area.AddVertex(data, fvc, (DataVertex)(vc.DataContext));
 
-            fvc.SetPosition(new Point(vc.GetPosition().X - 20, vc.GetPosition().Y - 20));
+            data.ContentVisible = true;
+            updateVertexLayout(data);
         }
 
         private void DoIncludeVertex(VertexControl vc, VertexControl paraVC)
@@ -378,9 +381,23 @@ namespace ShowcaseExample
             //throw new NotImplementedException();
         }
 
-        private void CreateFolderVertex()
+        private void updateVertexLayout(DataVertex dv)
         {
+            if (dv.ChildVertex.Count == 0)
+                return;
 
+            Rect contentRect = new Rect();
+            foreach (DataVertex child in dv.ChildVertex)
+            {
+                VertexControl vc = tg_Area.VertexList[child];
+                contentRect.Union(new Rect(vc.GetPosition().X, vc.GetPosition().Y,
+                                           vc.ActualWidth, vc.ActualHeight));
+            }
+
+            VertexControl vertex = tg_Area.VertexList[dv];
+            vertex.SetPosition(new Point(contentRect.X - 10, contentRect.Y - 80));
+            dv.ContentWidth = contentRect.Width + 20;
+            dv.ContentHeight = contentRect.Height + 20;
         }
 
 
