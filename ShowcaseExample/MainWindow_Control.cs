@@ -104,6 +104,7 @@ namespace ShowcaseExample
             tg_Area.VertexMouseMove += tg_Area_VertexMouseMove;
             tg_zoomctrl.PreviewMouseMove += tg_Area_MouseMove;
             tg_zoomctrl.MouseDown += tg_zoomctrl_MouseDown;
+            tg_zoomctrl.AreaSelected += dg_zoomctrl_AreaSelected;
             tg_Area.RelayoutFinished += tg_Area_RelayoutFinished;
 
             ZoomControl.SetViewFinderVisibility(tg_zoomctrl, System.Windows.Visibility.Visible);
@@ -115,7 +116,6 @@ namespace ShowcaseExample
 
             TGRegisterCommands();
         }
-
 
         #region Commands
 
@@ -195,6 +195,40 @@ namespace ShowcaseExample
             }
 
             vc.PositionChanged += vc_PositionChanged;
+        }
+
+        #endregion
+
+        #region multi select vertex and dragging
+
+        private List<VertexControl> SelectedVertices = new List<VertexControl>();
+
+        void dg_zoomctrl_AreaSelected(object sender, AreaSelectedEventArgs args)
+        {
+            var r = args.Rectangle;
+            foreach (var item in tg_Area.VertexList)
+            {
+                var offset = item.Value.GetPosition();
+                var irect = new Rect(offset.X, offset.Y, item.Value.ActualWidth, item.Value.ActualHeight);
+                if (irect.IntersectsWith(r))
+                    SelectVertex(item.Value);
+            }
+        }
+
+        private void SelectVertex(VertexControl vc)
+        {
+            if (SelectedVertices.Contains(vc))
+            {
+                SelectedVertices.Remove(vc);
+                HighlightBehaviour.SetHighlighted(vc, false);
+                DragBehaviour.SetIsTagged(vc, false);
+            }
+            else
+            {
+                SelectedVertices.Add(vc);
+                HighlightBehaviour.SetHighlighted(vc, true);
+                DragBehaviour.SetIsTagged(vc, true);
+            }
         }
 
         #endregion
@@ -384,7 +418,6 @@ namespace ShowcaseExample
             updateVertexLayout(data);
 
             fvc.PositionChanged += vc_PositionChanged;
-
         }
 
         private void DoIncludeVertex(VertexControl vc, VertexControl paraVC)
@@ -427,13 +460,13 @@ namespace ShowcaseExample
             if (dv.ChildVertex.Count == 0)
                 return;
 
-            HighlightBehaviour.SetHighlighted(vertexControl, true);
+            //HighlightBehaviour.SetHighlighted(vertexControl, true);
             DragBehaviour.SetIsTagged(vertexControl, true);
             
             foreach (DataVertex child in dv.ChildVertex)
             {
                 tg_Area.VertexList[child].PositionChanged -= vc_PositionChanged;
-                HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], true);
+                //HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], true);
                 DragBehaviour.SetIsTagged(tg_Area.VertexList[child], true);
             }
 
@@ -446,13 +479,13 @@ namespace ShowcaseExample
             if (dv.ChildVertex.Count == 0)
                 return;
 
-            HighlightBehaviour.SetHighlighted((VertexControl)sender, false);
+            //HighlightBehaviour.SetHighlighted((VertexControl)sender, false);
             DragBehaviour.SetIsTagged((VertexControl)sender, false);
 
             foreach (DataVertex child in dv.ChildVertex)
             {
                 tg_Area.VertexList[child].PositionChanged += vc_PositionChanged;
-                HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], false);
+                //HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], false);
                 DragBehaviour.SetIsTagged(tg_Area.VertexList[child], false);
             }
 
@@ -505,6 +538,16 @@ namespace ShowcaseExample
             {
                 tg_Area_VertexSelected_ED(args.VertexControl);
                 return;
+            }
+
+            if (args.MouseArgs.LeftButton == MouseButtonState.Pressed)
+            {
+                if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                {
+                    //if (DragBehaviour.GetIsDragging(args.VertexControl)) return;
+
+                    SelectVertex(args.VertexControl);
+                }
             }
 
             if (args.MouseArgs.LeftButton == MouseButtonState.Pressed)
