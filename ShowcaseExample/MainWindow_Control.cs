@@ -78,7 +78,6 @@ namespace ShowcaseExample
             }
         }
 
-
         private void ThemedGraph_Constructor()
         {
             var tg_Logic = new LogicCoreExample();
@@ -314,13 +313,16 @@ namespace ShowcaseExample
         {
             if (_isInEDMode && _edGeo != null && _edEdge != null && _edVertex != null && e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
             {
-                //place point
-                var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
-                pos.X += 2;
-                pos.Y += 2;
-                var lastseg = _edGeo.Figures[0].Segments[_edGeo.Figures[0].Segments.Count - 1] as PolyLineSegment;
-                lastseg.Points.Add(pos);
-                _edEdge.SetEdgePathManually(_edGeo);
+                ////place point
+                //var pos = tg_zoomctrl.TranslatePoint(e.GetPosition(tg_zoomctrl), tg_Area);
+                //pos.X += 2;
+                //pos.Y += 2;
+                //var lastseg = _edGeo.Figures[0].Segments[_edGeo.Figures[0].Segments.Count - 1] as PolyLineSegment;
+                //lastseg.Points.Add(pos);
+                //_edEdge.SetEdgePathManually(_edGeo);
+
+                _isInEDMode = false;
+                clearEdgeDrawing();
             }
         }
 
@@ -467,6 +469,11 @@ namespace ShowcaseExample
         {
             DataVertex dv = vc.Vertex as DataVertex;
             DataVertex paraDv = paraVC.Vertex as DataVertex;
+
+            // place paraVC to the mouse position
+            Point mousePosition;
+            mousePosition = MouseUtilities.CorrectGetPosition(tg_Area);
+            paraVC.SetPosition(mousePosition);
 
             dv.ChildVertex.Add(paraDv);
             paraDv.ParentVertex = dv;
@@ -616,6 +623,8 @@ namespace ShowcaseExample
 
         #endregion
 
+        private List<DataVertex> involvedVertex = new List<DataVertex>();
+
         private void DoToggleChildVertex(VertexControl vc)
         {
             DataVertex dv = vc.Vertex as DataVertex;
@@ -624,8 +633,23 @@ namespace ShowcaseExample
             {
                 VertexControl childVisual = tg_Area.VertexList[child];
                 childVisual.Visibility = dv.ContentVisible ? Visibility.Visible : Visibility.Hidden;
+                involvedVertex.Add(child);
+
                 IterateTogglChildVertex(child, dv.ContentVisible);
             }
+
+            foreach (var edge in tg_Area.EdgesList)
+            {
+                DataVertex relatedVertex = null;
+                if (involvedVertex.Contains(edge.Key.Source))
+                    relatedVertex = edge.Key.Source;
+                else if (involvedVertex.Contains(edge.Key.Target))
+                    relatedVertex = edge.Key.Target;
+
+                if (relatedVertex != null)
+                    edge.Value.Visibility = tg_Area.VertexList[relatedVertex].Visibility;
+            }
+
         }
 
         private void IterateTogglChildVertex(DataVertex dv, bool show)
@@ -635,6 +659,7 @@ namespace ShowcaseExample
                 VertexControl childVisual = tg_Area.VertexList[child];
                 // shows only if the both command(show, !show) and the contentvisible property of the vertex itself are true
                 childVisual.Visibility = (dv.ContentVisible && show) ? Visibility.Visible : Visibility.Hidden;
+                involvedVertex.Add(child);
                 IterateTogglChildVertex(child, show);
             }
         }

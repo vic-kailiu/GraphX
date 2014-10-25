@@ -49,7 +49,8 @@ namespace ShowcaseExample
         public void MoveLayer(DataVertex dv, VertexControl vc, int previousLayer)
         {
             base.removeVisual(vc);
-            nestedvisualLayers[nestedvisualLayers.Count - previousLayer].vertexlayer--;
+            if (nestedvisualLayers.Count > 0) // for promote leave to folder
+                nestedvisualLayers[nestedvisualLayers.Count - previousLayer].vertexlayer--;
 
             int layer = nestedvisualLayers.Count - dv.layerLevel;
             int visualLayer = FindLayer(ref layer);
