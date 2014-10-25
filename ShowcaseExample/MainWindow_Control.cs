@@ -30,6 +30,7 @@ namespace ShowcaseExample
         ChangeAuthor,
         MergeVertex,
         IncludeVertex,
+        ToggleContent,
     }
 
     public partial class MainWindow
@@ -71,8 +72,12 @@ namespace ShowcaseExample
                 case RoutedCommands.IncludeVertex:
                     DoIncludeVertex(vc, paraVC);
                     return;
+                case RoutedCommands.ToggleContent:
+                    DoToggleChildVertex(vc);
+                    return;
             }
         }
+
 
         private void ThemedGraph_Constructor()
         {
@@ -393,7 +398,7 @@ namespace ShowcaseExample
             {
                 pre_Parent = dv.ParentVertex;
                 pre_Parent.ChildVertex.Remove(dv);
-                Promote(dv.ParentVertex, dv.layerLevel + 1);
+                Promote(pre_Parent, pre_Parent.layerLevel + 1);
             }
 
             // place paraVC to the mouse position
@@ -610,6 +615,29 @@ namespace ShowcaseExample
         }
 
         #endregion
+
+        private void DoToggleChildVertex(VertexControl vc)
+        {
+            DataVertex dv = vc.Vertex as DataVertex;
+
+            foreach(DataVertex child in dv.ChildVertex)
+            {
+                VertexControl childVisual = tg_Area.VertexList[child];
+                childVisual.Visibility = dv.ContentVisible ? Visibility.Visible : Visibility.Hidden;
+                IterateTogglChildVertex(child, dv.ContentVisible);
+            }
+        }
+
+        private void IterateTogglChildVertex(DataVertex dv, bool show)
+        {
+            foreach (DataVertex child in dv.ChildVertex)
+            {
+                VertexControl childVisual = tg_Area.VertexList[child];
+                // shows only if the both command(show, !show) and the contentvisible property of the vertex itself are true
+                childVisual.Visibility = (dv.ContentVisible && show) ? Visibility.Visible : Visibility.Hidden;
+                IterateTogglChildVertex(child, show);
+            }
+        }
 
         #endregion
 

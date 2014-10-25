@@ -150,7 +150,6 @@ namespace ShowcaseExample
         {
         }
 
-
         private static readonly Random Rand = new Random();
 
         public DataVertex(string text = "")

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace ShowcaseExample.Templates
@@ -50,6 +51,10 @@ namespace ShowcaseExample.Templates
                     MainWindow.MW().RouteCommand(vc, RoutedCommands.IncludeVertex,
                                                     ((DragEventArgs)e).Data.GetData(DataFormats.StringFormat));
                     ((DragEventArgs)e).Handled = true;
+                }
+                else if (sender is ToggleButton)
+                {
+                    MainWindow.MW().RouteCommand(vc, RoutedCommands.ToggleContent, null);
                 }
             }
             return;

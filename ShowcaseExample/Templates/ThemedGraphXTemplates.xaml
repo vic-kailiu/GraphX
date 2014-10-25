@@ -199,12 +199,13 @@
                                        VerticalAlignment="Center"
                                        FontWeight="Bold"
                                        Foreground="Black"
-                                       Text="{Binding Name}"
-                                       MouseDown="NotifyMainWindow"/>
+                                       MouseDown="NotifyMainWindow"
+                                       Text="{Binding Name}" />
                             <ToggleButton x:Name="ToggleButton"
                                           Grid.Row="0"
                                           Grid.Column="2"
-                                          IsChecked="{Binding ContentVisible}"/>
+                                          Click="NotifyMainWindow"
+                                          IsChecked="{Binding ContentVisible}" />
                             <TextBlock x:Name="Author"
                                        Grid.Row="1"
                                        Grid.Column="1"
@@ -214,9 +215,9 @@
                                        FontSize="14"
                                        FontStyle="Italic"
                                        Foreground="White"
+                                       MouseDown="NotifyMainWindow"
                                        Text="{Binding Profession}"
-                                       TextAlignment="Center"
-                                       MouseDown="NotifyMainWindow"/>
+                                       TextAlignment="Center" />
                             <Border x:Name="ToggleContent"
                                     Grid.Row="2"
                                     Grid.ColumnSpan="3"
@@ -224,7 +225,7 @@
                                     Height="{Binding ContentHeight}"
                                     AllowDrop="True"
                                     Background="Aqua"
-                                    Drop="NotifyMainWindow"/>
+                                    Drop="NotifyMainWindow" />
                             <Button x:Name="EdgeGrip"
                                     Grid.Row="2"
                                     Grid.Column="3"
