@@ -80,10 +80,23 @@ namespace ShowcaseExample
             return visualLayer;
         }
 
-
-        public void AddEdge(DataEdge edgeData, EdgeControl edgeControl, int i)
+        public void GraphAddEdge(DataEdge edgeData, EdgeControl edgeControl)
         {
-            InternalAddEdge(edgeData, edgeControl, i);
+            //edge should be below the highest ranking vertex
+            int layer = edgeData.Source.layerLevel > edgeData.Target.layerLevel ?
+                        edgeData.Source.layerLevel : edgeData.Target.layerLevel;
+            layer = nestedvisualLayers.Count - layer;
+
+            int visualLayer = 0;
+            for (int i = 0; i < layer; i++)
+            {
+                visualLayer += nestedvisualLayers[i].vertexlayer
+                             + nestedvisualLayers[i].edgeLayer;
+            }
+
+            InternalAddEdge(edgeData, edgeControl, visualLayer);
+            if (layer < nestedvisualLayers.Count)
+                nestedvisualLayers[layer].edgeLayer++;
             if (EnableVisualPropsApply && edgeControl != null)
                 ReapplySingleEdgeVisualProperties(edgeControl);
         }

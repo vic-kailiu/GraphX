@@ -340,7 +340,7 @@ namespace ShowcaseExample
             var data = new DataEdge(_edVertex.Vertex as DataVertex, vc.Vertex as DataVertex);
             tg_Area.LogicCore.Graph.AddEdge(data);
             var ec = new EdgeControl(_edVertex, vc, data) { DataContext = data };
-            tg_Area.InsertEdge(data, ec);
+            tg_Area.GraphAddEdge(data, ec);
 
             _isInEDMode = false;
             clearEdgeDrawing();
@@ -597,7 +597,6 @@ namespace ShowcaseExample
                 updateVertexLayout(dv.ParentVertex, false);
                 IterateUpdateParent(dv.ParentVertex);
             }
-
         }
 
         void IterateUpdateParent(DataVertex dv)
