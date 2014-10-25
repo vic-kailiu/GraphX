@@ -376,8 +376,26 @@ namespace ShowcaseExample
             DragDrop.DoDragDrop(vc, ((DataVertex)vc.Vertex).ID.ToString(), DragDropEffects.Link);
         }
 
+        // Case for merge with vertex that have a parent already,
+        // it should do:
+        // Move the pre_folder to higher level
+        // Create new vertex on that level
+        // Change the parent for merge target
+        // Add merge sender to newly created folder vertex
+        // update new folder -> parent (pre_folder)
         private void DoMergeVertex(VertexControl vc, VertexControl paraVC)
         {
+            DataVertex dv = vc.Vertex as DataVertex;
+            DataVertex paraDv = paraVC.Vertex as DataVertex;
+
+            DataVertex pre_Parent = null;
+            if (dv.ParentVertex !=null)
+            {
+                pre_Parent = dv.ParentVertex;
+                pre_Parent.ChildVertex.Remove(dv);
+                Promote(dv.ParentVertex, dv.layerLevel + 1);
+            }
+
             // place paraVC to the mouse position
             Point mousePosition;
             //mousePosition = tg_zoomctrl.TranslatePoint(Mouse.GetPosition(tg_zoomctrl), tg_Area);
@@ -385,9 +403,6 @@ namespace ShowcaseExample
             // http://tech.pro/tutorial/893/wpf-snippet-reliably-getting-the-mouse-position
             mousePosition = MouseUtilities.CorrectGetPosition(tg_Area);
             paraVC.SetPosition(mousePosition);
-
-            DataVertex dv = vc.Vertex as DataVertex;
-            DataVertex paraDv = paraVC.Vertex as DataVertex;
 
             //create folder node
             var data = new DataVertex("FolderVertex " + tg_Area.VertexList.Count() + 1);
@@ -403,10 +418,16 @@ namespace ShowcaseExample
             data.layerLevel = (dv.layerLevel > paraDv.layerLevel ? dv.layerLevel : paraDv.layerLevel)
                                + 1;
 
-            data.ChildVertex.Add((DataVertex)vc.Vertex);
-            data.ChildVertex.Add((DataVertex)paraVC.Vertex);
+            data.ChildVertex.Add(dv);
+            data.ChildVertex.Add(paraDv);
             dv.ParentVertex = data;
             paraDv.ParentVertex = data;
+
+            if (pre_Parent != null)
+            {
+                data.ParentVertex = pre_Parent;
+                pre_Parent.ChildVertex.Add(data);
+            }
 
             tg_Area.LogicCore.Graph.AddVertex(data);
 
@@ -416,27 +437,72 @@ namespace ShowcaseExample
             tg_Area.GraphAddVertex(data, fvc);
 
             data.ContentVisible = true;
-            updateVertexLayout(data);
+            updateVertexLayout(data, true);
+            //IterateUpdateParent(data);
 
+            fvc.SizeChanged += fvc_SizeChanged;
             fvc.PositionChanged += vc_PositionChanged;
+        }
+
+        void fvc_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            VertexControl vc = sender as VertexControl;
+            vc.SizeChanged -= fvc_SizeChanged; // used for the first time only
+            IterateUpdateParent(vc.Vertex as DataVertex);
+        }
+
+        private void Promote(DataVertex dataVertex, int level)
+        {
+            int pre_level = dataVertex.layerLevel;
+            dataVertex.layerLevel = level;
+            tg_Area.MoveLayer(dataVertex, tg_Area.VertexList[dataVertex], pre_level);
         }
 
         private void DoIncludeVertex(VertexControl vc, VertexControl paraVC)
         {
-            //throw new NotImplementedException();
+            DataVertex dv = vc.Vertex as DataVertex;
+            DataVertex paraDv = paraVC.Vertex as DataVertex;
+
+            dv.ChildVertex.Add(paraDv);
+            paraDv.ParentVertex = dv;
+
+            if (dv.layerLevel <= paraDv.layerLevel)
+            {
+                Promote(dv, paraDv.layerLevel + 1);
+            }
+
+            updateVertexLayout(dv, false);
+            IterateUpdateParent(dv);
         }
 
-        private void updateVertexLayout(DataVertex dv)
+        private void updateVertexLayout(DataVertex dv, bool reset)
         {
             if (dv.ChildVertex.Count == 0)
                 return;
 
             Rect contentRect = GetContentRect(dv.ChildVertex);
+            Rect dvContentRect;
 
-            VertexControl vertex = tg_Area.VertexList[dv];
-            vertex.SetPosition(new Point(contentRect.X - VisualConfig.ContentMargin, contentRect.Y - (VisualConfig.ContentVPos + VisualConfig.ContentMargin)));
-            dv.ContentWidth = contentRect.Width + 2 * VisualConfig.ContentMargin;
-            dv.ContentHeight = contentRect.Height + 2 * VisualConfig.ContentMargin;
+            if (reset)
+            {
+                dvContentRect = contentRect;
+            }
+            else
+            {
+                VertexControl vc = tg_Area.VertexList[dv];
+                dvContentRect = new Rect(vc.GetPosition().X,
+                                         vc.GetPosition().Y + VisualConfig.ContentVPos,
+                                         dv.ContentWidth, dv.ContentHeight);
+                if (dvContentRect.Contains(contentRect))
+                    return;
+
+                dvContentRect.Union(contentRect);
+            }
+
+            tg_Area.VertexList[dv].SetPosition(new Point(dvContentRect.X,
+                                                         dvContentRect.Y - VisualConfig.ContentVPos));
+            dv.ContentWidth = dvContentRect.Width;
+            dv.ContentHeight = dvContentRect.Height;
         }
 
         private Rect GetContentRect(List<DataVertex> dvlist)
@@ -447,16 +513,25 @@ namespace ShowcaseExample
             foreach (DataVertex child in dvlist)
             {
                 VertexControl vc = tg_Area.VertexList[child];
+
                 contentRect.Union(new Rect(vc.GetPosition().X, vc.GetPosition().Y,
                                            vc.ActualWidth, vc.ActualHeight));
             }
+
+            // add margin to the rect
+            contentRect.Union(new Point(contentRect.X - VisualConfig.ContentMargin,
+                                        contentRect.Y - VisualConfig.ContentMargin));
+            contentRect.Union(new Point(contentRect.Right + VisualConfig.ContentMargin,
+                                        contentRect.Bottom + VisualConfig.ContentMargin));
+
             return contentRect;
         }
 
         #endregion
 
         private int DraggedFolderLevel = 0;
-        private DataVertex CurrentlyUpdatingVertex = null;
+
+        #region update child vertex by Tagging them once a parent vertex is selected
 
         private void tg_Area_VertexSelected_LeftClick(VertexControl vertexControl)
         {
@@ -466,27 +541,15 @@ namespace ShowcaseExample
 
             DraggedFolderLevel = dv.layerLevel;
 
-            //HighlightBehaviour.SetHighlighted(vertexControl, true);
             DragBehaviour.SetIsTagged(vertexControl, true);
 
             foreach (DataVertex child in dv.ChildVertex)
             {
-                //tg_Area.VertexList[child].PositionChanged -= vc_PositionChanged;
-                //HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], true);
                 DragBehaviour.SetIsTagged(tg_Area.VertexList[child], true);
                 IterateSetTagged(child, true);
             }
 
             vertexControl.PreviewMouseUp += vertexControl_MouseUp;
-        }
-
-        private void IterateSetTagged(DataVertex dv, bool tagged)
-        {
-            foreach (DataVertex child in dv.ChildVertex)
-            {
-                DragBehaviour.SetIsTagged(tg_Area.VertexList[child], tagged);
-                IterateSetTagged(child, tagged);
-            } 
         }
 
         private void vertexControl_MouseUp(object sender, MouseButtonEventArgs e)
@@ -497,13 +560,10 @@ namespace ShowcaseExample
 
             DraggedFolderLevel = 0;
 
-            //HighlightBehaviour.SetHighlighted((VertexControl)sender, false);
             DragBehaviour.SetIsTagged((VertexControl)sender, false);
 
             foreach (DataVertex child in dv.ChildVertex)
             {
-                //tg_Area.VertexList[child].PositionChanged += vc_PositionChanged;
-                //HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], false);
                 DragBehaviour.SetIsTagged(tg_Area.VertexList[child], false);
                 IterateSetTagged(child, false);
             }
@@ -511,27 +571,46 @@ namespace ShowcaseExample
             ((VertexControl)sender).MouseUp -= vertexControl_MouseUp;
         }
 
+        private void IterateSetTagged(DataVertex dv, bool tagged)
+        {
+            foreach (DataVertex child in dv.ChildVertex)
+            {
+                DragBehaviour.SetIsTagged(tg_Area.VertexList[child], tagged);
+                IterateSetTagged(child, tagged);
+            }
+        }
+
+        #endregion
+
+        #region used for update parent vertex
         void vc_PositionChanged(object sender, VertexPositionEventArgs args)
         {
             DataVertex dv= ((VertexControl)sender).Vertex as DataVertex;
 
-            if (DraggedFolderLevel > dv.layerLevel ||
-                CurrentlyUpdatingVertex == dv)
+            if (DraggedFolderLevel > dv.layerLevel)
                 return;
 
             // update parent
             if (dv.ParentVertex !=null )
             {
                 VertexControl parentVC = tg_Area.VertexList[dv.ParentVertex];
-                updateVertexLayout(dv.ParentVertex);
+                updateVertexLayout(dv.ParentVertex, false);
+                IterateUpdateParent(dv.ParentVertex);
             }
 
         }
 
-        void UpdateParent(DataVertex dv)
+        void IterateUpdateParent(DataVertex dv)
         {
-
+            if (dv.ParentVertex != null)
+            {
+                VertexControl parentVC = tg_Area.VertexList[dv.ParentVertex];
+                updateVertexLayout(dv.ParentVertex, false);
+                IterateUpdateParent(dv.ParentVertex);
+            }
         }
+
+        #endregion
 
         #endregion
 

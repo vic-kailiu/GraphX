@@ -43,11 +43,13 @@ namespace ShowcaseExample.Templates
                 {
                     MainWindow.MW().RouteCommand(vc, RoutedCommands.MergeVertex,
                                                     ((DragEventArgs)e).Data.GetData(DataFormats.StringFormat));
+                    ((DragEventArgs)e).Handled = true;
                 }
                 else if (sender is Border)
                 {
                     MainWindow.MW().RouteCommand(vc, RoutedCommands.IncludeVertex,
                                                     ((DragEventArgs)e).Data.GetData(DataFormats.StringFormat));
+                    ((DragEventArgs)e).Handled = true;
                 }
             }
             return;

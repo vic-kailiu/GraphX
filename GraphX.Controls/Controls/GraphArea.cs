@@ -389,6 +389,16 @@ namespace GraphX
             }
         }
 
+        protected void removeVisual(UIElement visual)
+        {
+            base.Children.Remove(visual);
+        }
+
+        protected void addVisual(UIElement visual, int i)
+        {
+            base.Children.Insert(i, visual);
+        }
+
         #endregion
 
         #endregion

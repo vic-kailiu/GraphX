@@ -15,6 +15,7 @@ namespace ShowcaseExample
             public int edgeLayer = 0;
         }
 
+        // nestedvisualLayers[0] to be the root folder, placed at the very back
         private List<Layer> nestedvisualLayers = null;
 
         public GraphAreaExample()
@@ -34,27 +35,51 @@ namespace ShowcaseExample
             {
                 // find corresonding layer
                 int layer = nestedvisualLayers.Count - vertexData.layerLevel;
-                // count layer below and edge layer ==> visualLayer
-                if (layer == -1)
-                {
-                    Layer newLayer = new Layer();
-                    layer = 0;
-                    nestedvisualLayers.Insert(layer, newLayer);
-                }
 
-                visualLayer = 0;
-                for (int i = 0; i<layer; i++)
-                {
-                    visualLayer += nestedvisualLayers[i].vertexlayer 
-                                 + nestedvisualLayers[i].edgeLayer; 
-                }
-                visualLayer += nestedvisualLayers[layer].edgeLayer; // visual layer is above the edge layer
+                visualLayer = FindLayer(ref layer);
 
                 InternalAddVertex(vertexData, vertexControl, visualLayer);
+                nestedvisualLayers[layer].vertexlayer++;
+
                 if (EnableVisualPropsApply && vertexControl != null)
                     ReapplySingleVertexVisualProperties(vertexControl);
-            }            
+            }
         }
+
+        public void MoveLayer(DataVertex dv, VertexControl vc, int previousLayer)
+        {
+            base.removeVisual(vc);
+            nestedvisualLayers[nestedvisualLayers.Count - previousLayer].vertexlayer--;
+
+            int layer = nestedvisualLayers.Count - dv.layerLevel;
+            int visualLayer = FindLayer(ref layer);
+            base.addVisual(vc, visualLayer);
+            nestedvisualLayers[layer].vertexlayer++;
+        }
+
+        private int FindLayer(ref int layer)
+        {
+            int visualLayer = -1;
+
+            // count layer below and edge layer ==> visualLayer
+            if (layer == -1)
+            {
+                Layer newLayer = new Layer();
+                layer = 0;
+                nestedvisualLayers.Insert(layer, newLayer);
+            }
+
+            visualLayer = 0;
+            for (int i = 0; i < layer; i++)
+            {
+                visualLayer += nestedvisualLayers[i].vertexlayer
+                             + nestedvisualLayers[i].edgeLayer;
+            }
+            visualLayer += nestedvisualLayers[layer].edgeLayer; // visual layer is above the edge layer
+
+            return visualLayer;
+        }
+
 
         public void AddEdge(DataEdge edgeData, EdgeControl edgeControl, int i)
         {
