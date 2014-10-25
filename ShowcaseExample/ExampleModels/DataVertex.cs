@@ -54,7 +54,7 @@ namespace ShowcaseExample
         }
         public string Gender { get; set; }
         public int Age { get; set; }
-        public int layerLever { get; set; }
+        public int layerLevel { get; set; }
 
         [YAXDontSerialize]
         public double ContentWidth

@@ -172,14 +172,14 @@ namespace ShowcaseExample
             data.Profession = ThemedDataStorage.Professions[Rand.Next(0, ThemedDataStorage.Professions.Count - 1)];
             data.Name = ThemedDataStorage.Names[Rand.Next(0, ThemedDataStorage.Names.Count - 1)];
 
-            data.layerLever = 0;
+            data.layerLevel = 0;
 
             tg_Area.LogicCore.Graph.AddVertex(data);
 
             VertexControl vc = new VertexControl(data);
             DragBehaviour.SetIsDragEnabled(vc, true);
             DragBehaviour.SetUpdateEdgesOnMove(vc, true);
-            tg_Area.AddVertex(data, vc, null);
+            tg_Area.GraphAddVertex(data, vc);
 
             vc.SetPosition(new Point(x, y));
             if (tg_Area.VertexList.Count == 1)
@@ -386,10 +386,10 @@ namespace ShowcaseExample
             mousePosition = MouseUtilities.CorrectGetPosition(tg_Area);
             paraVC.SetPosition(mousePosition);
 
+            DataVertex dv = vc.Vertex as DataVertex;
+            DataVertex paraDv = paraVC.Vertex as DataVertex;
+
             //create folder node
-            // assume vc and paraVC at same layer
-            //TODO: well defined logic to handle situations that vc and paraVC at different layer
-            int vertexLayer = ((DataVertex)(vc.DataContext)).layerLever; 
             var data = new DataVertex("FolderVertex " + tg_Area.VertexList.Count() + 1);
 
             data.Age = Rand.Next(18, 75);
@@ -400,19 +400,20 @@ namespace ShowcaseExample
             data.Profession = ThemedDataStorage.Professions[Rand.Next(0, ThemedDataStorage.Professions.Count - 1)];
             data.Name = "BIG Boss";
 
-            data.layerLever = vertexLayer;
+            data.layerLevel = (dv.layerLevel > paraDv.layerLevel ? dv.layerLevel : paraDv.layerLevel)
+                               + 1;
+
             data.ChildVertex.Add((DataVertex)vc.Vertex);
             data.ChildVertex.Add((DataVertex)paraVC.Vertex);
-
-            ((DataVertex)vc.Vertex).ParentVertex = data;
-            ((DataVertex)paraVC.Vertex).ParentVertex = data;
+            dv.ParentVertex = data;
+            paraDv.ParentVertex = data;
 
             tg_Area.LogicCore.Graph.AddVertex(data);
 
             VertexControl fvc = new VertexControl(data);
             DragBehaviour.SetIsDragEnabled(fvc, true);
             DragBehaviour.SetUpdateEdgesOnMove(fvc, true);
-            tg_Area.AddVertex(data, fvc, (DataVertex)(vc.DataContext));
+            tg_Area.GraphAddVertex(data, fvc);
 
             data.ContentVisible = true;
             updateVertexLayout(data);
@@ -454,7 +455,7 @@ namespace ShowcaseExample
 
         #endregion
 
-        private bool IsFolderDragged = false;
+        private int DraggedFolderLevel = 0;
         private DataVertex CurrentlyUpdatingVertex = null;
 
         private void tg_Area_VertexSelected_LeftClick(VertexControl vertexControl)
@@ -463,7 +464,7 @@ namespace ShowcaseExample
             if (dv.ChildVertex.Count == 0)
                 return;
 
-            IsFolderDragged = true;
+            DraggedFolderLevel = dv.layerLevel;
 
             //HighlightBehaviour.SetHighlighted(vertexControl, true);
             DragBehaviour.SetIsTagged(vertexControl, true);
@@ -473,9 +474,19 @@ namespace ShowcaseExample
                 //tg_Area.VertexList[child].PositionChanged -= vc_PositionChanged;
                 //HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], true);
                 DragBehaviour.SetIsTagged(tg_Area.VertexList[child], true);
+                IterateSetTagged(child, true);
             }
 
             vertexControl.PreviewMouseUp += vertexControl_MouseUp;
+        }
+
+        private void IterateSetTagged(DataVertex dv, bool tagged)
+        {
+            foreach (DataVertex child in dv.ChildVertex)
+            {
+                DragBehaviour.SetIsTagged(tg_Area.VertexList[child], tagged);
+                IterateSetTagged(child, tagged);
+            } 
         }
 
         private void vertexControl_MouseUp(object sender, MouseButtonEventArgs e)
@@ -484,7 +495,7 @@ namespace ShowcaseExample
             if (dv.ChildVertex.Count == 0)
                 return;
 
-            IsFolderDragged = false;
+            DraggedFolderLevel = 0;
 
             //HighlightBehaviour.SetHighlighted((VertexControl)sender, false);
             DragBehaviour.SetIsTagged((VertexControl)sender, false);
@@ -494,6 +505,7 @@ namespace ShowcaseExample
                 //tg_Area.VertexList[child].PositionChanged += vc_PositionChanged;
                 //HighlightBehaviour.SetHighlighted(tg_Area.VertexList[child], false);
                 DragBehaviour.SetIsTagged(tg_Area.VertexList[child], false);
+                IterateSetTagged(child, false);
             }
 
             ((VertexControl)sender).MouseUp -= vertexControl_MouseUp;
@@ -501,44 +513,24 @@ namespace ShowcaseExample
 
         void vc_PositionChanged(object sender, VertexPositionEventArgs args)
         {
-            if (IsFolderDragged) return;
-
             DataVertex dv= ((VertexControl)sender).Vertex as DataVertex;
 
-            if (CurrentlyUpdatingVertex == dv)
+            if (DraggedFolderLevel > dv.layerLevel ||
+                CurrentlyUpdatingVertex == dv)
                 return;
 
             // update parent
             if (dv.ParentVertex !=null )
             {
                 VertexControl parentVC = tg_Area.VertexList[dv.ParentVertex];
-                CurrentlyUpdatingVertex = dv.ParentVertex;
                 updateVertexLayout(dv.ParentVertex);
-                CurrentlyUpdatingVertex = null;
             }
 
-            //// update children
-            //if (dv.ChildVertex.Count > 0)
-            //{
-            //    VertexControl fvc = tg_Area.VertexList[dv];
-            //    Point dvPos = fvc.GetPosition();
-            //    Point dvPrePos = fvc.PreviousPos;
-                
-            //    double deltaX = dvPos.X - dvPrePos.X;
-            //    double deltaY = dvPos.Y - dvPrePos.Y;
+        }
 
-            //    if ((deltaX == 0) && (deltaY == 0))
-            //        return;
+        void UpdateParent(DataVertex dv)
+        {
 
-            //    foreach (DataVertex child in dv.ChildVertex)
-            //    {
-            //        VertexControl vc = tg_Area.VertexList[child];
-            //        vc.PositionChanged -= vc_PositionChanged;
-            //        Point vcpos = vc.GetPosition();
-            //        vc.SetPosition(new Point(vcpos.X + deltaX, vcpos.Y + deltaY));
-            //        vc.PositionChanged += vc_PositionChanged;
-            //    }
-            //}
         }
 
         #endregion

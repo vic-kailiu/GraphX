@@ -22,18 +22,18 @@ namespace ShowcaseExample
             nestedvisualLayers = new List<Layer>();
         }
 
-        public void AddVertex(DataVertex vertexData, VertexControl vertexControl, DataVertex childVertex)
+        public void GraphAddVertex(DataVertex vertexData, VertexControl vertexControl)
         {
             int visualLayer = -1;
 
-            if (childVertex == null)
+            if (vertexData.layerLevel == 0)
             {
                 AddVertex(vertexData, vertexControl); // add to top, simply add it
             }
             else
             {
                 // find corresonding layer
-                int layer = nestedvisualLayers.Count - childVertex.layerLever - 1;
+                int layer = nestedvisualLayers.Count - vertexData.layerLevel;
                 // count layer below and edge layer ==> visualLayer
                 if (layer == -1)
                 {
