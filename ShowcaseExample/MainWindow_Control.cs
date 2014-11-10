@@ -19,6 +19,10 @@ using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
 using ShowcaseExample.Controls;
 using ShowcaseExample.Utils;
+using Acrobat;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Interop;
 
 namespace ShowcaseExample
 {
@@ -80,6 +84,8 @@ namespace ShowcaseExample
 
         private void ThemedGraph_Constructor()
         {
+            //InitCBViewer();
+
             var tg_Logic = new LogicCoreExample();
             tg_Area.LogicCore = tg_Logic;
 
@@ -121,7 +127,126 @@ namespace ShowcaseExample
             TGRegisterCommands();
         }
 
+        #region Clipboard viewer related methods
+
+        /// <summary>
+        /// Next clipboard viewer window 
+        /// </summary>
+        private IntPtr hWndNextViewer;
+
+        /// <summary>
+        /// The <see cref="HwndSource"/> for this window.
+        /// </summary>
+        private HwndSource hWndSource;
+
+        private bool isViewing;
+
+        private void InitCBViewer()
+        {
+            WindowInteropHelper wih = new WindowInteropHelper(this);
+            hWndSource = HwndSource.FromHwnd(wih.Handle);
+
+            hWndSource.AddHook(this.WinProc);   // start processing window messages
+            hWndNextViewer = Win32.SetClipboardViewer(hWndSource.Handle);   // set this window as a viewer
+            isViewing = true;
+        }
+
+        private void CloseCBViewer()
+        {
+            // remove this window from the clipboard viewer chain
+            Win32.ChangeClipboardChain(hWndSource.Handle, hWndNextViewer);
+
+            hWndNextViewer = IntPtr.Zero;
+            hWndSource.RemoveHook(this.WinProc);
+            isViewing = false;
+        }
+
+        private void DrawContent()
+        {
+            //pnlContent.Children.Clear();
+
+            if (Clipboard.ContainsText())
+            {
+                // we have some text in the clipboard.
+                TextBox tb = new TextBox();
+                tb.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
+                tb.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+                tb.Text = Clipboard.GetText();
+                tb.IsReadOnly = true;
+                tb.TextWrapping = TextWrapping.NoWrap;
+                //pnlContent.Children.Add(tb);
+            }
+            else if (Clipboard.ContainsFileDropList())
+            {
+                // we have a file drop list in the clipboard
+                ListBox lb = new ListBox();
+                lb.ItemsSource = Clipboard.GetFileDropList();
+                //pnlContent.Children.Add(lb);
+            }
+            else if (Clipboard.ContainsImage())
+            {
+                // Because of a known issue in WPF,
+                // we have to use a workaround to get correct
+                // image that can be displayed.
+                // The image have to be saved to a stream and then 
+                // read out to workaround the issue.
+                MemoryStream ms = new MemoryStream();
+                BmpBitmapEncoder enc = new BmpBitmapEncoder();
+                enc.Frames.Add(BitmapFrame.Create(Clipboard.GetImage()));
+                enc.Save(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                BmpBitmapDecoder dec = new BmpBitmapDecoder(ms,
+                    BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
+
+                Image img = new Image();
+                img.Stretch = Stretch.Uniform;
+                img.Source = dec.Frames[0];
+                //pnlContent.Children.Add(img);
+            }
+            else
+            {
+                Label lb = new Label();
+                lb.Content = "The type of the data in the clipboard is not supported by this sample.";
+                //pnlContent.Children.Add(lb);
+            }
+        }
+
+        private IntPtr WinProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            switch (msg)
+            {
+                case Win32.WM_CHANGECBCHAIN:
+                    if (wParam == hWndNextViewer)
+                    {
+                        // clipboard viewer chain changed, need to fix it.
+                        hWndNextViewer = lParam;
+                    }
+                    else if (hWndNextViewer != IntPtr.Zero)
+                    {
+                        // pass the message to the next viewer.
+                        Win32.SendMessage(hWndNextViewer, msg, wParam, lParam);
+                    }
+                    break;
+
+                case Win32.WM_DRAWCLIPBOARD:
+                    // clipboard content changed
+                    this.DrawContent();
+                    // pass the message to the next viewer.
+                    Win32.SendMessage(hWndNextViewer, msg, wParam, lParam);
+                    break;
+            }
+
+            return IntPtr.Zero;
+        }
+
+        #endregion
+
         #region Commands
+
+        CAcroApp mApp;
+        CAcroPDDoc pdDoc;
+        CAcroAVDoc avDoc;
 
         #region TGRelayoutCommand
         private bool TGRelayoutCommandCanExecute(object sender)
@@ -131,7 +256,23 @@ namespace ShowcaseExample
 
         private void TGRelayoutCommandExecute(object sender)
         {
-            //tg_Area.VertexList.Keys.First().ContentVisibility = System.Windows.Visibility.Visible;
+            InitCBViewer();
+            return;
+
+            CAcroAVPageView pageView = avDoc.GetAVPageView() as CAcroAVPageView;
+            if (pageView == null)
+                return;
+
+            AcroRectClass rect = new AcroRectClass();
+            rect.Top = 100;
+            rect.bottom = 200;
+            rect.Left = 100;
+            rect.right = 300;
+            CAcroPDPage page = pdDoc.AcquirePage(pageView.GetPageNum()) as CAcroPDPage;
+            CAcroPDAnnot annot = page.AddNewAnnot(-1, "Text", rect) as CAcroPDAnnot;
+            int foo = 0;
+
+                //tg_Area.VertexList.Keys.First().ContentVisibility = System.Windows.Visibility.Visible;
             //if (tg_Area.LogicCore.AsyncAlgorithmCompute)
             //    tg_loader.Visibility = System.Windows.Visibility.Visible;
 
@@ -148,7 +289,20 @@ namespace ShowcaseExample
         
         private void tg_but_randomgraph_Click(object sender, RoutedEventArgs e)
         {
-            addVertex(Rand.Next(0, 200), Rand.Next(0, 200));
+            //Initialize Acrobat by creating App object
+            mApp = new AcroAppClass();
+            //Show Acrobat
+            mApp.Show();
+            //set AVDoc object
+            avDoc = new AcroAVDocClass();
+
+            //constant, hard coding for a pdf to open, it can be changed when needed.
+            String szPdfPathConst = Directory.GetCurrentDirectory() + "\\1.pdf";
+            if (avDoc.Open(szPdfPathConst, ""))
+            {
+                //set the pdDoc object and get some data
+                pdDoc = (CAcroPDDoc)avDoc.GetPDDoc();
+            }
         }
         
         #endregion
